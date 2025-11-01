@@ -1,0 +1,66 @@
+#-------------------------
+# CodeIgniter 4 System Files
+#-------------------------
+/vendor/
+/builds/
+/writable/cache/*
+/writable/logs/*
+/writable/session/*
+/writable/uploads/*
+!/writable/cache/index.html
+!/writable/logs/index.html
+!/writable/session/index.html
+!/writable/uploads/index.html
+
+#-------------------------
+# Environment Files
+#-------------------------
+.env
+.env.*
+!.env.example
+
+#-------------------------
+# IDE Files
+#-------------------------
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+
+#-------------------------
+# Composer
+#-------------------------
+composer.phar
+composer.lock
+
+#-------------------------
+# PHP
+#-------------------------
+*.log
+*.cache
+.phpunit.result.cache
+
+#-------------------------
+# Node (si usas npm)
+#-------------------------
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+#-------------------------
+# Archivos de sistema
+#-------------------------
+Thumbs.db
+*.swp
+*.swo
+*~
+
+#-------------------------
+# Archivos sensibles
+#-------------------------
+/public/uploads/
+*.sql
+*.sqlite
+*.db
