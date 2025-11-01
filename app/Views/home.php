@@ -3,6 +3,7 @@
 
 <section class="hero text-center text-light py-5" style="background-color: #000;">
   <div class="container">
+    <img src="<?= base_url('assets/images/logo.png') ?>" alt="Logo La Bartola" style="height: 120px; width: auto; margin-bottom: 1.5rem;">
     <h1 class="display-4 fw-bold" style="color: #D4B68A;">La Bartola</h1>
     <p class="lead text-light mb-4">Casa de comidas y delivery en Buenos Aires</p>
     <a href="<?= base_url('menu') ?>" class="btn btn-lg" style="background-color: #D4B68A; color: #000;">Ver Menú</a>

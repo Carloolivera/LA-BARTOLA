@@ -2,15 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * This file is part of CodeIgniter Shield.
- *
- * (c) CodeIgniter Foundation <admin@codeigniter.com>
- *
- * For the full copyright and license information, please view
- * the LICENSE file that was distributed with this source code.
- */
-
 namespace Config;
 
 use CodeIgniter\Shield\Config\AuthGroups as ShieldAuthGroups;
@@ -21,45 +12,26 @@ class AuthGroups extends ShieldAuthGroups
      * --------------------------------------------------------------------
      * Default Group
      * --------------------------------------------------------------------
-     * The group that a newly registered user is added to.
+     * El grupo al que se asigna un usuario recién creado.
      */
-    public string $defaultGroup = 'user';
+    public string $defaultGroup = 'vendedor';
 
     /**
      * --------------------------------------------------------------------
      * Groups
      * --------------------------------------------------------------------
-     * An associative array of the available groups in the system, where the keys
-     * are the group names and the values are arrays of the group info.
-     *
-     * Whatever value you assign as the key will be used to refer to the group
-     * when using functions such as:
-     *      $user->addGroup('superadmin');
+     * Grupos disponibles en el sistema para La Bartola.
      *
      * @var array<string, array<string, string>>
-     *
-     * @see https://codeigniter4.github.io/shield/quick_start_guide/using_authorization/#change-available-groups for more info
      */
     public array $groups = [
-        'superadmin' => [
-            'title'       => 'Super Admin',
-            'description' => 'Complete control of the site.',
-        ],
         'admin' => [
-            'title'       => 'Admin',
-            'description' => 'Day to day administrators of the site.',
+            'title'       => 'Administrador',
+            'description' => 'Control total del sistema. Puede crear usuarios.',
         ],
-        'developer' => [
-            'title'       => 'Developer',
-            'description' => 'Site programmers.',
-        ],
-        'user' => [
-            'title'       => 'User',
-            'description' => 'General users of the site. Often customers.',
-        ],
-        'beta' => [
-            'title'       => 'Beta User',
-            'description' => 'Has access to beta-level features.',
+        'vendedor' => [
+            'title'       => 'Vendedor',
+            'description' => 'Gestiona pedidos y clientes del día a día.',
         ],
     ];
 
@@ -67,51 +39,60 @@ class AuthGroups extends ShieldAuthGroups
      * --------------------------------------------------------------------
      * Permissions
      * --------------------------------------------------------------------
-     * The available permissions in the system.
-     *
-     * If a permission is not listed here it cannot be used.
+     * Permisos disponibles en el sistema.
      */
     public array $permissions = [
-        'admin.access'        => 'Can access the sites admin area',
-        'admin.settings'      => 'Can access the main site settings',
-        'users.manage-admins' => 'Can manage other admins',
-        'users.create'        => 'Can create new non-admin users',
-        'users.edit'          => 'Can edit existing non-admin users',
-        'users.delete'        => 'Can delete existing non-admin users',
-        'beta.access'         => 'Can access beta-level features',
+        // Permisos de usuarios
+        'users.create'   => 'Puede crear nuevos usuarios',
+        'users.edit'     => 'Puede editar usuarios',
+        'users.delete'   => 'Puede eliminar usuarios',
+        'users.view'     => 'Puede ver lista de usuarios',
+        
+        // Permisos de pedidos
+        'orders.create'  => 'Puede crear pedidos',
+        'orders.edit'    => 'Puede editar pedidos',
+        'orders.delete'  => 'Puede eliminar pedidos',
+        'orders.view'    => 'Puede ver pedidos',
+        
+        // Permisos de productos/menú
+        'menu.create'    => 'Puede crear productos',
+        'menu.edit'      => 'Puede editar productos',
+        'menu.delete'    => 'Puede eliminar productos',
+        'menu.view'      => 'Puede ver productos',
+        
+        // Permisos de clientes
+        'clients.create' => 'Puede crear clientes',
+        'clients.edit'   => 'Puede editar clientes',
+        'clients.delete' => 'Puede eliminar clientes',
+        'clients.view'   => 'Puede ver clientes',
+        
+        // Permisos de reportes
+        'reports.view'   => 'Puede ver reportes',
+        'reports.export' => 'Puede exportar reportes',
     ];
 
     /**
      * --------------------------------------------------------------------
      * Permissions Matrix
      * --------------------------------------------------------------------
-     * Maps permissions to groups.
-     *
-     * This defines group-level permissions.
+     * Mapeo de permisos a grupos.
      */
     public array $matrix = [
-        'superadmin' => [
-            'admin.*',
-            'users.*',
-            'beta.*',
-        ],
         'admin' => [
-            'admin.access',
-            'users.create',
-            'users.edit',
-            'users.delete',
-            'beta.access',
+            // Admin tiene TODOS los permisos
+            'users.*',
+            'orders.*',
+            'menu.*',
+            'clients.*',
+            'reports.*',
         ],
-        'developer' => [
-            'admin.access',
-            'admin.settings',
-            'users.create',
-            'users.edit',
-            'beta.access',
-        ],
-        'user' => [],
-        'beta' => [
-            'beta.access',
+        'vendedor' => [
+            // Vendedor tiene los mismos permisos por ahora (luego ajustar)
+            'users.*',
+            'orders.*',
+            'menu.*',
+            'clients.*',
+            'reports.*',
         ],
     ];
 }
