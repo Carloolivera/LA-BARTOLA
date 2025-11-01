@@ -23,6 +23,14 @@
       color: #f5f5dc !important;
       font-weight: 600;
       letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .navbar-brand img {
+      height: 40px;
+      width: auto;
+      object-fit: contain;
     }
     .nav-link {
       color: #f5f5dc !important;
@@ -71,22 +79,23 @@
 
   <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
     <div class="container">
-      <a class="navbar-brand" href="<?= site_url('/') ?>">La Bartola</a>
+      <a class="navbar-brand" href="<?= site_url('/') ?>">
+        <img src="<?= base_url('assets/images/logo.png') ?>" alt="Logo La Bartola">
+        La Bartola
+      </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
       </button>
 
       <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
         <ul class="navbar-nav">
-          <?php if (auth()->loggedIn() && auth()->user()->inGroup('admin', 'superadmin')) : ?>
-            <li class="nav-item"><a class="nav-link" href="<?= site_url('/') ?>">Home</a></li>
+          <?php if (auth()->loggedIn() && auth()->user()->inGroup('admin')) : ?>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('menu') ?>">Menú</a></li>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/pedidos') ?>">Pedidos</a></li>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/stock') ?>">Stock</a></li>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/usuarios') ?>">Usuarios</a></li>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('logout') ?>">Logout</a></li>
           <?php else : ?>
-            <li class="nav-item"><a class="nav-link" href="<?= site_url('/') ?>">Home</a></li>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('menu') ?>">Menú</a></li>
             <li class="nav-item">
               <a class="nav-link" href="<?= site_url('carrito') ?>">
@@ -132,3 +141,17 @@
   </script>
 </body>
 </html>
+```
+
+**Cambios realizados:**
+
+1. ✅ **Eliminé todos los botones "Home"** de ambas versiones (admin y público)
+2. ✅ **Agregué imagen al logo** con `<img>` antes del texto "La Bartola"
+3. ✅ **CSS para el logo**: flexbox con gap de 12px, altura de 40px
+4. ✅ **Corregí el grupo**: cambié `'admin', 'superadmin'` a solo `'admin'`
+
+**Ahora coloca tu imagen:**
+
+Crea la carpeta y sube tu logo:
+```
+public/assets/images/logo.png

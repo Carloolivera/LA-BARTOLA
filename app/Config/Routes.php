@@ -30,14 +30,18 @@ $routes->group('perfil', ['filter' => 'session'], static function ($routes) {
     $routes->get('/', 'Perfil::index');
 });
 
-$routes->group('admin', ['filter' => 'group:admin,superadmin'], static function ($routes) {
+$routes->group('admin', ['filter' => 'group:admin'], static function ($routes) {
+    // Panel Admin
     $routes->get('pedidos', 'Admin::pedidos');
-    $routes->get('stock', 'Admin::stock');
     $routes->get('usuarios', 'Admin::usuarios');
     $routes->post('actualizar-estado-pedido', 'Admin::actualizarEstadoPedido');
-    $routes->post('agregar-plato', 'Admin::agregarPlato');
-    $routes->post('editar-plato/(:num)', 'Admin::editarPlato/$1');
-    $routes->get('eliminar-plato/(:num)', 'Admin::eliminarPlato/$1');
+    
+    // CRUD Platos (desde menú admin)
+    $routes->get('menu/crear', 'Admin::crearPlato');
+    $routes->post('menu/guardar', 'Admin::guardarPlato');
+    $routes->get('menu/editar/(:num)', 'Admin::editarPlato/$1');
+    $routes->post('menu/actualizar/(:num)', 'Admin::actualizarPlato/$1');
+    $routes->get('menu/eliminar/(:num)', 'Admin::eliminarPlato/$1');
 });
 
 service('auth')->routes($routes);
