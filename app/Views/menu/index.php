@@ -13,6 +13,11 @@
     <div class="row g-4">
       <?php if (!empty($platos)) : ?>
         <?php foreach ($platos as $p) : ?>
+          <?php 
+          // Determinar si el stock es bajo
+          $stockBajo = ($p['stock_ilimitado'] == 0) && ($p['stock'] > 0) && ($p['stock'] <= 5);
+          ?>
+          
           <div class="col-md-6 col-lg-4">
             <div class="card bg-black text-light border-warning h-100">
               <?php if (!empty($p['imagen'])): ?>
@@ -24,6 +29,15 @@
                 <div class="bg-secondary d-flex align-items-center justify-content-center" 
                      style="height: 250px;">
                   <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                </div>
+              <?php endif; ?>
+              
+              <!-- Badge de stock bajo -->
+              <?php if ($stockBajo): ?>
+                <div class="position-absolute top-0 end-0 m-2">
+                  <span class="badge bg-warning text-dark">
+                    <i class="bi bi-exclamation-triangle"></i> ¡ÚLTIMAS <?= $p['stock'] ?>!
+                  </span>
                 </div>
               <?php endif; ?>
               
@@ -47,6 +61,7 @@
             </div>
           </div>
 
+          <!-- Modal del plato -->
           <div class="modal fade" id="modalPedir<?= $p['id'] ?>" tabindex="-1">
             <div class="modal-dialog">
               <div class="modal-content bg-dark text-light">
@@ -77,10 +92,16 @@
                              name="cantidad" 
                              value="1" 
                              min="1" 
-                             max="<?= $p['stock'] ?? 99 ?>"
+                             max="<?= $p['stock_ilimitado'] == 1 ? 99 : $p['stock'] ?>"
                              required>
-                      <?php if (isset($p['stock']) && $p['stock'] > 0): ?>
-                        <small class="text-muted">Stock disponible: <?= $p['stock'] ?></small>
+                      <?php if ($p['stock_ilimitado'] == 0 && $p['stock'] > 0): ?>
+                        <small class="text-muted">
+                          <i class="bi bi-box-seam"></i> Stock disponible: <?= $p['stock'] ?> unidad<?= $p['stock'] != 1 ? 'es' : '' ?>
+                        </small>
+                      <?php elseif ($p['stock_ilimitado'] == 1): ?>
+                        <small class="text-success">
+                          <i class="bi bi-infinity"></i> Stock ilimitado
+                        </small>
                       <?php endif; ?>
                     </div>
                     
@@ -95,7 +116,9 @@
                   
                   <div class="modal-footer border-warning">
                     <button type="button" class="btn btn-outline-warning" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-warning">Agregar al Carrito</button>
+                    <button type="submit" class="btn btn-warning">
+                      <i class="bi bi-cart-plus"></i> Agregar al Carrito
+                    </button>
                   </div>
                 </form>
               </div>
@@ -132,13 +155,22 @@ document.addEventListener('DOMContentLoaded', function() {
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          document.getElementById('cart-count').textContent = data.cart_count;
+          // Actualizar contador del carrito
+          const cartCount = document.getElementById('cart-count');
+          if (cartCount) {
+            cartCount.textContent = data.cart_count;
+          }
           
-          modal.hide();
+          // Cerrar modal
+          if (modal) {
+            modal.hide();
+          }
           
+          // Mostrar alerta de éxito
           const alert = document.createElement('div');
           alert.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
           alert.style.zIndex = '9999';
+          alert.style.minWidth = '300px';
           alert.innerHTML = `
             <i class="bi bi-check-circle me-2"></i>${data.message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -147,18 +179,69 @@ document.addEventListener('DOMContentLoaded', function() {
           
           setTimeout(() => alert.remove(), 3000);
           
+          // Resetear formulario
           this.reset();
         } else {
-          alert('Error: ' + data.message);
+          // Mostrar error
+          const alert = document.createElement('div');
+          alert.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+          alert.style.zIndex = '9999';
+          alert.style.minWidth = '300px';
+          alert.innerHTML = `
+            <i class="bi bi-exclamation-triangle me-2"></i>${data.message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          `;
+          document.body.appendChild(alert);
+          
+          setTimeout(() => alert.remove(), 3000);
         }
       })
       .catch(error => {
         console.error('Error:', error);
-        alert('Error al agregar al carrito');
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+        alert.style.zIndex = '9999';
+        alert.innerHTML = `
+          <i class="bi bi-x-circle me-2"></i>Error al agregar al carrito
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alert);
+        
+        setTimeout(() => alert.remove(), 3000);
       });
     });
   });
 });
 </script>
+
+<style>
+.card {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+}
+
+.position-absolute.top-0.end-0 {
+  z-index: 10;
+}
+
+.badge {
+  font-size: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+</style>
 
 <?= $this->endSection() ?>
