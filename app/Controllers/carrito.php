@@ -3,58 +3,174 @@
 namespace App\Controllers;
 
 use CodeIgniter\Controller;
-use App\Models\PlatoModel;
 
 class Carrito extends Controller
 {
+    protected $session;
+
+    public function __construct()
+    {
+        $this->session = \Config\Services::session();
+    }
+
     public function index()
     {
-        helper(['form']);
-        $platoModel = new PlatoModel();
+        $carrito = $this->session->get('carrito') ?? [];
         
-        $data['platos'] = $platoModel->findAll();
+        $data['carrito'] = $carrito;
         
         return view('carrito/index', $data);
     }
 
     public function agregar()
     {
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => 'Producto agregado al carrito'
-        ]);
+        try {
+            $plato_id = $this->request->getPost('plato_id');
+            $cantidad = (int)$this->request->getPost('cantidad');
+
+            if (!$plato_id || !$cantidad) {
+                return $this->response->setJSON([
+                    'success' => false, 
+                    'message' => 'Datos incompletos'
+                ]);
+            }
+
+            $db = \Config\Database::connect();
+            $plato = $db->table('platos')->where('id', $plato_id)->get()->getRowArray();
+
+            if (!$plato) {
+                return $this->response->setJSON([
+                    'success' => false, 
+                    'message' => 'Plato no encontrado'
+                ]);
+            }
+
+            $carrito = $this->session->get('carrito') ?? [];
+
+            if (isset($carrito[$plato_id])) {
+                $carrito[$plato_id]['cantidad'] += $cantidad;
+            } else {
+                $carrito[$plato_id] = [
+                    'nombre' => $plato['nombre'],
+                    'precio' => $plato['precio'],
+                    'cantidad' => $cantidad
+                ];
+            }
+
+            $this->session->set('carrito', $carrito);
+
+            $cart_count = array_sum(array_column($carrito, 'cantidad'));
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Plato agregado al carrito',
+                'cart_count' => $cart_count
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error en Carrito::agregar - ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al agregar al carrito: ' . $e->getMessage()
+            ]);
+        }
     }
 
     public function actualizar()
     {
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => 'Carrito actualizado'
-        ]);
+        $plato_id = $this->request->getPost('plato_id');
+        $cantidad = $this->request->getPost('cantidad');
+
+        $carrito = $this->session->get('carrito') ?? [];
+
+        if (isset($carrito[$plato_id])) {
+            $carrito[$plato_id]['cantidad'] = $cantidad;
+            $this->session->set('carrito', $carrito);
+            return redirect()->to('/carrito')->with('success', 'Cantidad actualizada');
+        }
+
+        return redirect()->to('/carrito')->with('error', 'Plato no encontrado en el carrito');
     }
 
     public function eliminar()
     {
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => 'Producto eliminado del carrito'
-        ]);
+        $plato_id = $this->request->getPost('plato_id');
+
+        $carrito = $this->session->get('carrito') ?? [];
+
+        if (isset($carrito[$plato_id])) {
+            unset($carrito[$plato_id]);
+            $this->session->set('carrito', $carrito);
+            return redirect()->to('/carrito')->with('success', 'Plato eliminado del carrito');
+        }
+
+        return redirect()->to('/carrito')->with('error', 'Plato no encontrado en el carrito');
     }
 
     public function vaciar()
     {
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => 'Carrito vaciado'
-        ]);
+        $this->session->remove('carrito');
+        return redirect()->to('/carrito')->with('success', 'Carrito vaciado');
     }
 
-    public function checkout()
+    public function finalizar()
     {
-        if (!auth()->loggedIn()) {
-            return redirect()->to('/login')->with('error', 'Debes iniciar sesión para finalizar la compra');
+        $carrito = $this->session->get('carrito') ?? [];
+
+        if (empty($carrito)) {
+            return redirect()->to('/carrito')->with('error', 'El carrito está vacío');
         }
 
-        return view('carrito/checkout');
+        $nombre_cliente = $this->request->getPost('nombre_cliente');
+        $tipo_entrega = $this->request->getPost('tipo_entrega');
+        $direccion = $this->request->getPost('direccion');
+        $forma_pago = $this->request->getPost('forma_pago');
+
+        $db = \Config\Database::connect();
+        
+        $notas = "A nombre de: {$nombre_cliente}\n";
+        $notas .= "Tipo de entrega: {$tipo_entrega}\n";
+        if ($tipo_entrega === 'delivery' && !empty($direccion)) {
+            $notas .= "Dirección: {$direccion}\n";
+        }
+        $notas .= "Forma de pago: {$forma_pago}\n\n";
+        $notas .= "Detalle del pedido:\n";
+
+        $total = 0;
+        foreach ($carrito as $plato_id => $item) {
+            $subtotal = $item['precio'] * $item['cantidad'];
+            $total += $subtotal;
+            
+            $pedidoData = [
+                'usuario_id' => auth()->loggedIn() ? auth()->id() : null,
+                'plato_id' => $plato_id,
+                'cantidad' => $item['cantidad'],
+                'total' => $subtotal,
+                'estado' => 'pendiente',
+                'notas' => $notas . $item['nombre'] . ' x' . $item['cantidad']
+            ];
+
+            $db->table('pedidos')->insert($pedidoData);
+        }
+
+        $this->session->remove('carrito');
+
+        if ($forma_pago === 'qr') {
+            return $this->response->setJSON(['success' => true]);
+        }
+
+        return redirect()->to('/pedido')->with('success', 'Pedido realizado exitosamente');
+    }
+
+    public function mostrarQR()
+    {
+        return view('carrito/qr');
+    }
+
+    public function getCount()
+    {
+        $carrito = $this->session->get('carrito') ?? [];
+        $cart_count = array_sum(array_column($carrito, 'cantidad'));
+        
+        return $this->response->setJSON(['cart_count' => $cart_count]);
     }
 }

@@ -1,113 +1,215 @@
-<?php
+<?= $this->extend('layouts/main') ?>
 
-namespace App\Controllers;
+<?= $this->section('content') ?>
+<div class="container my-5">
+    <h2 class="text-center mb-4 text-warning">Mi Carrito</h2>
 
-use CodeIgniter\Controller;
-use App\Models\PedidoModel;
-use App\Models\PlatoModel;
+    <?php if (session()->getFlashdata('success')): ?>
+        <div class="alert alert-success"><?= session()->getFlashdata('success') ?></div>
+    <?php endif; ?>
 
-class Admin extends Controller
-{
-    protected $helpers = ['auth'];
+    <?php if (session()->getFlashdata('error')): ?>
+        <div class="alert alert-danger"><?= session()->getFlashdata('error') ?></div>
+    <?php endif; ?>
 
-    public function __construct()
-    {
-        if (!auth()->loggedIn() || !auth()->user()->inGroup('admin', 'superadmin')) {
-            redirect()->to('/')->send();
-            exit;
+    <?php if (empty($carrito)): ?>
+        <div class="alert alert-info text-center">
+            <p>Tu carrito está vacío</p>
+            <a href="<?= site_url('menu') ?>" class="btn btn-warning">Ver Menú</a>
+        </div>
+    <?php else: ?>
+        <div class="table-responsive">
+            <table class="table table-dark table-striped">
+                <thead>
+                    <tr>
+                        <th>Plato</th>
+                        <th>Precio</th>
+                        <th>Cantidad</th>
+                        <th>Subtotal</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                    $total = 0;
+                    foreach ($carrito as $id => $item): 
+                        $subtotal = $item['precio'] * $item['cantidad'];
+                        $total += $subtotal;
+                    ?>
+                        <tr>
+                            <td><?= esc($item['nombre']) ?></td>
+                            <td>$<?= number_format($item['precio'], 2) ?></td>
+                            <td>
+                                <form action="<?= site_url('carrito/actualizar') ?>" method="post" class="d-inline">
+                                    <input type="hidden" name="plato_id" value="<?= $id ?>">
+                                    <input type="number" name="cantidad" value="<?= $item['cantidad'] ?>" min="1" class="form-control form-control-sm d-inline" style="width: 70px;">
+                                    <button type="submit" class="btn btn-sm btn-warning">Actualizar</button>
+                                </form>
+                            </td>
+                            <td>$<?= number_format($subtotal, 2) ?></td>
+                            <td>
+                                <form action="<?= site_url('carrito/eliminar') ?>" method="post" class="d-inline">
+                                    <input type="hidden" name="plato_id" value="<?= $id ?>">
+                                    <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="3" class="text-end">Total:</th>
+                        <th>$<?= number_format($total, 2) ?></th>
+                        <th></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="d-flex justify-content-between mt-4">
+            <form action="<?= site_url('carrito/vaciar') ?>" method="post">
+                <button type="submit" class="btn btn-outline-danger">Vaciar Carrito</button>
+            </form>
+            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#finalizarPedidoModal">
+                Finalizar Pedido
+            </button>
+        </div>
+    <?php endif; ?>
+</div>
+
+<div class="modal fade" id="finalizarPedidoModal" tabindex="-1" aria-labelledby="finalizarPedidoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-beige">
+            <div class="modal-header border-warning">
+                <h5 class="modal-title text-warning" id="finalizarPedidoModalLabel">Finalizar Pedido</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="<?= site_url('carrito/finalizar') ?>" method="post" id="formFinalizarPedido">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="nombre_cliente" class="form-label">A nombre de:</label>
+                        <input type="text" class="form-control" id="nombre_cliente" name="nombre_cliente" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Tipo de entrega:</label>
+                        <div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="tipo_entrega" id="delivery" value="delivery" required>
+                                <label class="form-check-label" for="delivery">Delivery</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="tipo_entrega" id="para_llevar" value="para_llevar" required>
+                                <label class="form-check-label" for="para_llevar">Para llevar</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3" id="direccion_container" style="display: none;">
+                        <label for="direccion" class="form-label">Dirección:</label>
+                        <input type="text" class="form-control" id="direccion" name="direccion">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Forma de pago:</label>
+                        <div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="forma_pago" id="efectivo" value="efectivo" required>
+                                <label class="form-check-label" for="efectivo">Efectivo</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="forma_pago" id="qr" value="qr" required>
+                                <label class="form-check-label" for="qr">QR</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="forma_pago" id="mercado_pago" value="mercado_pago" required>
+                                <label class="form-check-label" for="mercado_pago">Mercado Pago</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info" id="mercado_pago_info" style="display: none;">
+                        <h6 class="text-dark">Datos para transferencia:</h6>
+                        <p class="mb-1"><strong>CBU:</strong> <span id="cbu_value">AQUI_VA_TU_CBU</span></p>
+                        <p class="mb-0"><strong>ALIAS:</strong> <span id="alias_value">AQUI_VA_TU_ALIAS</span></p>
+                    </div>
+                </div>
+                <div class="modal-footer border-warning">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Confirmar Pedido</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deliveryRadio = document.getElementById('delivery');
+    const paraLlevarRadio = document.getElementById('para_llevar');
+    const direccionContainer = document.getElementById('direccion_container');
+    const direccionInput = document.getElementById('direccion');
+
+    const efectivoRadio = document.getElementById('efectivo');
+    const qrRadio = document.getElementById('qr');
+    const mercadoPagoRadio = document.getElementById('mercado_pago');
+    const mercadoPagoInfo = document.getElementById('mercado_pago_info');
+
+    deliveryRadio.addEventListener('change', function() {
+        if (this.checked) {
+            direccionContainer.style.display = 'block';
+            direccionInput.required = true;
         }
-    }
+    });
 
-    public function pedidos()
-    {
-        $pedidoModel = new PedidoModel();
-        
-        $data['pedidos'] = $pedidoModel
-            ->select('pedidos.*, platos.nombre as plato_nombre, platos.precio, users.username')
-            ->join('platos', 'platos.id = pedidos.plato_id')
-            ->join('users', 'users.id = pedidos.usuario_id')
-            ->orderBy('pedidos.created_at', 'DESC')
-            ->findAll();
-        
-        return view('admin/pedidos', $data);
-    }
+    paraLlevarRadio.addEventListener('change', function() {
+        if (this.checked) {
+            direccionContainer.style.display = 'none';
+            direccionInput.required = false;
+            direccionInput.value = '';
+        }
+    });
 
-    public function stock()
-    {
-        $platoModel = new PlatoModel();
-        
-        $data['platos'] = $platoModel->findAll();
-        
-        return view('admin/stock', $data);
-    }
+    efectivoRadio.addEventListener('change', function() {
+        if (this.checked) {
+            mercadoPagoInfo.style.display = 'none';
+        }
+    });
 
-    public function usuarios()
-    {
-        $db = \Config\Database::connect();
-        
-        $data['usuarios'] = $db->table('users')
-            ->select('users.*, auth_groups_users.group')
-            ->join('auth_groups_users', 'auth_groups_users.user_id = users.id', 'left')
-            ->get()
-            ->getResultArray();
-        
-        return view('admin/usuarios', $data);
-    }
+    qrRadio.addEventListener('change', function() {
+        if (this.checked) {
+            mercadoPagoInfo.style.display = 'none';
+        }
+    });
 
-    public function actualizarEstadoPedido()
-    {
-        $pedidoModel = new PedidoModel();
-        
-        $id = $this->request->getPost('id');
-        $estado = $this->request->getPost('estado');
-        
-        $pedidoModel->update($id, ['estado' => $estado]);
-        
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => 'Estado actualizado correctamente'
-        ]);
-    }
+    mercadoPagoRadio.addEventListener('change', function() {
+        if (this.checked) {
+            mercadoPagoInfo.style.display = 'block';
+        }
+    });
 
-    public function agregarPlato()
-    {
-        $platoModel = new PlatoModel();
+    document.getElementById('formFinalizarPedido').addEventListener('submit', function(e) {
+        const formaPago = document.querySelector('input[name="forma_pago"]:checked').value;
         
-        $data = [
-            'nombre' => $this->request->getPost('nombre'),
-            'descripcion' => $this->request->getPost('descripcion'),
-            'precio' => $this->request->getPost('precio'),
-            'imagen' => $this->request->getPost('imagen'),
-            'activo' => 1
-        ];
-        
-        $platoModel->insert($data);
-        
-        return redirect()->to('/admin/stock')->with('success', 'Plato agregado correctamente');
-    }
+        if (formaPago === 'qr') {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            fetch('<?= site_url('carrito/finalizar') ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.open('<?= site_url('carrito/mostrarQR') ?>', '_blank');
+                    window.location.href = '<?= site_url('pedido') ?>';
+                }
+            });
+        }
+    });
+});
+</script>
 
-    public function editarPlato($id)
-    {
-        $platoModel = new PlatoModel();
-        
-        $data = [
-            'nombre' => $this->request->getPost('nombre'),
-            'descripcion' => $this->request->getPost('descripcion'),
-            'precio' => $this->request->getPost('precio'),
-            'imagen' => $this->request->getPost('imagen'),
-            'activo' => $this->request->getPost('activo')
-        ];
-        
-        $platoModel->update($id, $data);
-        
-        return redirect()->to('/admin/stock')->with('success', 'Plato actualizado correctamente');
-    }
-
-    public function eliminarPlato($id)
-    {
-        $platoModel = new PlatoModel();
-        $platoModel->delete($id);
-        
-        return redirect()->to('/admin/stock')->with('success', 'Plato eliminado correctamente');
-    }
-}
+<?= $this->endSection() ?>

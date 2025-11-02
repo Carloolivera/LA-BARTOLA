@@ -1,98 +1,55 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Config;
 
 use CodeIgniter\Shield\Config\AuthGroups as ShieldAuthGroups;
 
 class AuthGroups extends ShieldAuthGroups
 {
-    /**
-     * --------------------------------------------------------------------
-     * Default Group
-     * --------------------------------------------------------------------
-     * El grupo al que se asigna un usuario recién creado.
-     */
-    public string $defaultGroup = 'vendedor';
-
-    /**
-     * --------------------------------------------------------------------
-     * Groups
-     * --------------------------------------------------------------------
-     * Grupos disponibles en el sistema para La Bartola.
-     *
-     * @var array<string, array<string, string>>
-     */
     public array $groups = [
+        'superadmin' => [
+            'title'       => 'Super Admin',
+            'description' => 'Complete control of the site.',
+        ],
         'admin' => [
-            'title'       => 'Administrador',
-            'description' => 'Control total del sistema. Puede crear usuarios.',
+            'title'       => 'Admin',
+            'description' => 'Day to day administrators of the site.',
         ],
         'vendedor' => [
             'title'       => 'Vendedor',
-            'description' => 'Gestiona pedidos y clientes del día a día.',
+            'description' => 'Vendedor del negocio.',
+        ],
+        'cliente' => [
+            'title'       => 'Cliente',
+            'description' => 'Cliente registrado del negocio.',
         ],
     ];
 
-    /**
-     * --------------------------------------------------------------------
-     * Permissions
-     * --------------------------------------------------------------------
-     * Permisos disponibles en el sistema.
-     */
     public array $permissions = [
-        // Permisos de usuarios
-        'users.create'   => 'Puede crear nuevos usuarios',
-        'users.edit'     => 'Puede editar usuarios',
-        'users.delete'   => 'Puede eliminar usuarios',
-        'users.view'     => 'Puede ver lista de usuarios',
-        
-        // Permisos de pedidos
-        'orders.create'  => 'Puede crear pedidos',
-        'orders.edit'    => 'Puede editar pedidos',
-        'orders.delete'  => 'Puede eliminar pedidos',
-        'orders.view'    => 'Puede ver pedidos',
-        
-        // Permisos de productos/menú
-        'menu.create'    => 'Puede crear productos',
-        'menu.edit'      => 'Puede editar productos',
-        'menu.delete'    => 'Puede eliminar productos',
-        'menu.view'      => 'Puede ver productos',
-        
-        // Permisos de clientes
-        'clients.create' => 'Puede crear clientes',
-        'clients.edit'   => 'Puede editar clientes',
-        'clients.delete' => 'Puede eliminar clientes',
-        'clients.view'   => 'Puede ver clientes',
-        
-        // Permisos de reportes
-        'reports.view'   => 'Puede ver reportes',
-        'reports.export' => 'Puede exportar reportes',
+        'admin.access'    => 'Can access the sites admin area',
+        'admin.settings'  => 'Can access the main site settings',
+        'users.manage'    => 'Can manage users',
+        'vendedor.access' => 'Can access vendedor area',
+        'cliente.access'  => 'Can access cliente area',
     ];
 
-    /**
-     * --------------------------------------------------------------------
-     * Permissions Matrix
-     * --------------------------------------------------------------------
-     * Mapeo de permisos a grupos.
-     */
     public array $matrix = [
-        'admin' => [
-            // Admin tiene TODOS los permisos
+        'superadmin' => [
+            'admin.*',
             'users.*',
-            'orders.*',
-            'menu.*',
-            'clients.*',
-            'reports.*',
+            'vendedor.*',
+            'cliente.*',
+        ],
+        'admin' => [
+            'admin.access',
+            'users.manage',
+            'vendedor.access',
         ],
         'vendedor' => [
-            // Vendedor tiene los mismos permisos por ahora (luego ajustar)
-            'users.*',
-            'orders.*',
-            'menu.*',
-            'clients.*',
-            'reports.*',
+            'vendedor.access',
+        ],
+        'cliente' => [
+            'cliente.access',
         ],
     ];
 }

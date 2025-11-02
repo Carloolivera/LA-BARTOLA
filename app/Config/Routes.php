@@ -9,43 +9,41 @@ use CodeIgniter\Router\RouteCollection;
 $routes->get('/', 'Home::index');
 
 $routes->get('menu', 'Menu::index');
+
+$routes->get('carrito', 'Carrito::index');
+$routes->post('carrito/agregar', 'Carrito::agregar');
+$routes->post('carrito/actualizar', 'Carrito::actualizar');
+$routes->post('carrito/eliminar', 'Carrito::eliminar');
+$routes->post('carrito/vaciar', 'Carrito::vaciar');
+$routes->post('carrito/finalizar', 'Carrito::finalizar');
+$routes->get('carrito/mostrarQR', 'Carrito::mostrarQR');
+$routes->get('carrito/getCount', 'Carrito::getCount');
+
+$routes->get('pedido', 'Pedido::index');
+$routes->post('pedido/crear', 'Pedido::crear');
+
+$routes->group('usuario', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'Usuario::index');
+    $routes->get('crear', 'Usuario::crear');
+    $routes->post('guardar', 'Usuario::guardar');
+    $routes->get('editar/(:num)', 'Usuario::editar/$1');
+    $routes->post('actualizar/(:num)', 'Usuario::actualizar/$1');
+    $routes->get('eliminar/(:num)', 'Usuario::eliminar/$1');
+    $routes->post('toggleEstado/(:num)', 'Usuario::toggleEstado/$1');
+});
+
+$routes->group('admin', ['filter' => 'auth'], function($routes) {
+    $routes->get('pedidos', 'Admin\Pedidos::index');
+    $routes->get('pedidos/ver/(:num)', 'Admin\Pedidos::ver/$1');
+    $routes->match(['get', 'post'], 'pedidos/editar/(:num)', 'Admin\Pedidos::editar/$1');
+    $routes->post('pedidos/cambiarEstado/(:num)', 'Admin\Pedidos::cambiarEstado/$1');
+    $routes->post('pedidos/eliminar/(:num)', 'Admin\Pedidos::eliminar/$1');
+    $routes->get('stock', 'Admin::stock');
+    $routes->get('usuarios', 'Admin::usuarios');
+    $routes->post('actualizarEstadoPedido', 'Admin::actualizarEstadoPedido');
+});
+
 $routes->get('contacto', 'Contacto::index');
 $routes->post('contacto/enviar', 'Contacto::enviar');
 
-$routes->group('carrito', static function ($routes) {
-    $routes->get('/', 'Carrito::index');
-    $routes->post('agregar', 'Carrito::agregar');
-    $routes->post('actualizar', 'Carrito::actualizar');
-    $routes->post('eliminar', 'Carrito::eliminar');
-    $routes->post('vaciar', 'Carrito::vaciar');
-    $routes->get('checkout', 'Carrito::checkout', ['filter' => 'session']);
-});
-
-$routes->group('pedido', ['filter' => 'session'], static function ($routes) {
-    $routes->get('/', 'Pedido::index');
-    $routes->post('crear', 'Pedido::crear');
-});
-
-$routes->group('perfil', ['filter' => 'session'], static function ($routes) {
-    $routes->get('/', 'Perfil::index');
-});
-
-$routes->group('admin', ['filter' => 'group:admin'], static function ($routes) {
-    // Panel Admin
-    $routes->get('pedidos', 'Admin::pedidos');
-    $routes->get('usuarios', 'Admin::usuarios');
-    $routes->post('actualizar-estado-pedido', 'Admin::actualizarEstadoPedido');
-    
-    // CRUD Platos (desde menú admin)
-    $routes->get('menu/crear', 'Admin::crearPlato');
-    $routes->post('menu/guardar', 'Admin::guardarPlato');
-    $routes->get('menu/editar/(:num)', 'Admin::editarPlato/$1');
-    $routes->post('menu/actualizar/(:num)', 'Admin::actualizarPlato/$1');
-    $routes->get('menu/eliminar/(:num)', 'Admin::eliminarPlato/$1');
-});
-
 service('auth')->routes($routes);
-
-$routes->set404Override(function () {
-    echo view('errors/html/error_404', ['title' => 'Página no encontrada']);
-});
