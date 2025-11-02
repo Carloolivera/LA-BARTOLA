@@ -51,7 +51,7 @@ $routes->group('admin', ['filter' => 'auth'], function($routes) {
     $routes->get('pedidos/imprimir/(:num)', 'Admin\Pedidos::imprimirTicket/$1');
     $routes->get('stock', 'Admin::stock');
     $routes->get('usuarios', 'Admin::usuarios');
-    $routes->post('actualizarEstadoPedido', 'Admin::actualizarEstadoPedado');
+    $routes->post('actualizarEstadoPedido', 'Admin::actualizarEstadoPedido');
 });
 
 // RUTAS DE CONTACTO
@@ -62,5 +62,11 @@ $routes->post('contacto/enviar', 'Contacto::enviar');
 $routes->get('auth/google', 'Auth\GoogleAuth::redirect');
 $routes->get('auth/google/callback', 'Auth\GoogleAuth::callback');
 
-// RUTAS DE AUTENTICACION DE SHIELD
-service('auth')->routes($routes);
+// RUTAS DE AUTENTICACION DE SHIELD (PERSONALIZADAS)
+service('auth')->routes($routes, ['except' => ['login', 'register']]);
+
+// Login y Registro personalizados con redirección
+$routes->get('login', '\App\Controllers\Auth\LoginController::loginView');
+$routes->post('login', '\App\Controllers\Auth\LoginController::loginAction');
+$routes->get('register', '\App\Controllers\Auth\RegisterController::registerView');
+$routes->post('register', '\App\Controllers\Auth\RegisterController::registerAction');

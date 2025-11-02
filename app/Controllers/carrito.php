@@ -113,68 +113,71 @@ class Carrito extends Controller
     }
 
     public function finalizar()
-    {
-        // VERIFICAR QUE EL USUARIO ESTE LOGUEADO
-        if (!auth()->loggedIn()) {
-            return redirect()->to('/login')
-                ->with('error', 'Debe iniciar sesion para realizar un pedido');
-        }
-
-        $carrito = $this->session->get('carrito') ?? [];
-
-        if (empty($carrito)) {
-            return redirect()->to('/carrito')->with('error', 'El carrito esta vacio');
-        }
-
-        // OBTENER EL ID DEL USUARIO
-        $usuarioId = auth()->id();
+{
+    // VERIFICAR QUE EL USUARIO ESTE LOGUEADO
+    if (!auth()->loggedIn()) {
+        // Guardar la URL actual para redirigir después del login
+        session()->set('redirect_url', current_url());
         
-        // Validacion adicional por seguridad
-        if (empty($usuarioId)) {
-            return redirect()->to('/login')
-                ->with('error', 'Error de sesion. Por favor, inicie sesion nuevamente');
-        }
-
-        $nombre_cliente = $this->request->getPost('nombre_cliente');
-        $tipo_entrega = $this->request->getPost('tipo_entrega');
-        $direccion = $this->request->getPost('direccion');
-        $forma_pago = $this->request->getPost('forma_pago');
-
-        $db = \Config\Database::connect();
-        
-        $notas = "A nombre de: {$nombre_cliente}\n";
-        $notas .= "Tipo de entrega: {$tipo_entrega}\n";
-        if ($tipo_entrega === 'delivery' && !empty($direccion)) {
-            $notas .= "Direccion: {$direccion}\n";
-        }
-        $notas .= "Forma de pago: {$forma_pago}\n\n";
-        $notas .= "Detalle del pedido:\n";
-
-        $total = 0;
-        foreach ($carrito as $plato_id => $item) {
-            $subtotal = $item['precio'] * $item['cantidad'];
-            $total += $subtotal;
-            
-            $pedidoData = [
-                'usuario_id' => $usuarioId,
-                'plato_id' => $plato_id,
-                'cantidad' => $item['cantidad'],
-                'total' => $subtotal,
-                'estado' => 'pendiente',
-                'notas' => $notas . $item['nombre'] . ' x' . $item['cantidad']
-            ];
-
-            $db->table('pedidos')->insert($pedidoData);
-        }
-
-        $this->session->remove('carrito');
-
-        if ($forma_pago === 'qr') {
-            return $this->response->setJSON(['success' => true]);
-        }
-
-        return redirect()->to('/pedido')->with('success', 'Pedido realizado exitosamente');
+        return redirect()->to('/login')
+            ->with('error', 'Debe iniciar sesion para realizar un pedido');
     }
+
+    $carrito = $this->session->get('carrito') ?? [];
+
+    if (empty($carrito)) {
+        return redirect()->to('/carrito')->with('error', 'El carrito esta vacio');
+    }
+
+    // OBTENER EL ID DEL USUARIO
+    $usuarioId = auth()->id();
+    
+    // Validacion adicional por seguridad
+    if (empty($usuarioId)) {
+        return redirect()->to('/login')
+            ->with('error', 'Error de sesion. Por favor, inicie sesion nuevamente');
+    }
+
+    $nombre_cliente = $this->request->getPost('nombre_cliente');
+    $tipo_entrega = $this->request->getPost('tipo_entrega');
+    $direccion = $this->request->getPost('direccion');
+    $forma_pago = $this->request->getPost('forma_pago');
+
+    $db = \Config\Database::connect();
+    
+    $notas = "A nombre de: {$nombre_cliente}\n";
+    $notas .= "Tipo de entrega: {$tipo_entrega}\n";
+    if ($tipo_entrega === 'delivery' && !empty($direccion)) {
+        $notas .= "Direccion: {$direccion}\n";
+    }
+    $notas .= "Forma de pago: {$forma_pago}\n\n";
+    $notas .= "Detalle del pedido:\n";
+
+    $total = 0;
+    foreach ($carrito as $plato_id => $item) {
+        $subtotal = $item['precio'] * $item['cantidad'];
+        $total += $subtotal;
+        
+        $pedidoData = [
+            'usuario_id' => $usuarioId,
+            'plato_id' => $plato_id,
+            'cantidad' => $item['cantidad'],
+            'total' => $subtotal,
+            'estado' => 'pendiente',
+            'notas' => $notas . $item['nombre'] . ' x' . $item['cantidad']
+        ];
+
+        $db->table('pedidos')->insert($pedidoData);
+    }
+
+    $this->session->remove('carrito');
+
+    if ($forma_pago === 'qr') {
+        return $this->response->setJSON(['success' => true]);
+    }
+
+    return redirect()->to('/pedido')->with('success', 'Pedido realizado exitosamente');
+}
 
     public function mostrarQR()
     {

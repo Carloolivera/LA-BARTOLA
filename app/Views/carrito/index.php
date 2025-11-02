@@ -79,8 +79,16 @@
                         Debe iniciar sesión para realizar un pedido
                     </div>
                     <br>
-                    <a href="<?= site_url('login') ?>" class="btn btn-warning">
+                    <?php 
+                    // Guardar URL actual para redirección después del login
+                    $currentUrl = urlencode(current_url());
+                    ?>
+                    <a href="<?= site_url('login') ?>?redirect=<?= $currentUrl ?>" class="btn btn-warning">
                         <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                    </a>
+                    <span class="mx-2 text-muted">o</span>
+                    <a href="<?= site_url('register') ?>?redirect=<?= $currentUrl ?>" class="btn btn-outline-warning">
+                        <i class="bi bi-person-plus"></i> Registrarse
                     </a>
                 </div>
             <?php else: ?>
