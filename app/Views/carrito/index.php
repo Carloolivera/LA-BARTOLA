@@ -70,13 +70,31 @@
             <form action="<?= site_url('carrito/vaciar') ?>" method="post">
                 <button type="submit" class="btn btn-outline-danger">Vaciar Carrito</button>
             </form>
-            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#finalizarPedidoModal">
-                Finalizar Pedido
-            </button>
+            
+            <?php if (!auth()->loggedIn()): ?>
+                <!-- USUARIO NO LOGUEADO -->
+                <div class="text-end">
+                    <div class="alert alert-warning mb-2 d-inline-block">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        Debe iniciar sesión para realizar un pedido
+                    </div>
+                    <br>
+                    <a href="<?= site_url('login') ?>" class="btn btn-warning">
+                        <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                    </a>
+                </div>
+            <?php else: ?>
+                <!-- USUARIO LOGUEADO -->
+                <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#finalizarPedidoModal">
+                    <i class="bi bi-check-circle"></i> Finalizar Pedido
+                </button>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 </div>
 
+<!-- MODAL SOLO SE MUESTRA SI EL USUARIO ESTÁ LOGUEADO -->
+<?php if (auth()->loggedIn()): ?>
 <div class="modal fade" id="finalizarPedidoModal" tabindex="-1" aria-labelledby="finalizarPedidoModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content bg-dark text-beige">
@@ -211,5 +229,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+<?php endif; ?>
 
 <?= $this->endSection() ?>

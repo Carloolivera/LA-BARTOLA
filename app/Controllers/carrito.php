@@ -114,10 +114,25 @@ class Carrito extends Controller
 
     public function finalizar()
     {
+        // VERIFICAR QUE EL USUARIO ESTE LOGUEADO
+        if (!auth()->loggedIn()) {
+            return redirect()->to('/login')
+                ->with('error', 'Debe iniciar sesion para realizar un pedido');
+        }
+
         $carrito = $this->session->get('carrito') ?? [];
 
         if (empty($carrito)) {
-            return redirect()->to('/carrito')->with('error', 'El carrito está vacío');
+            return redirect()->to('/carrito')->with('error', 'El carrito esta vacio');
+        }
+
+        // OBTENER EL ID DEL USUARIO
+        $usuarioId = auth()->id();
+        
+        // Validacion adicional por seguridad
+        if (empty($usuarioId)) {
+            return redirect()->to('/login')
+                ->with('error', 'Error de sesion. Por favor, inicie sesion nuevamente');
         }
 
         $nombre_cliente = $this->request->getPost('nombre_cliente');
@@ -130,7 +145,7 @@ class Carrito extends Controller
         $notas = "A nombre de: {$nombre_cliente}\n";
         $notas .= "Tipo de entrega: {$tipo_entrega}\n";
         if ($tipo_entrega === 'delivery' && !empty($direccion)) {
-            $notas .= "Dirección: {$direccion}\n";
+            $notas .= "Direccion: {$direccion}\n";
         }
         $notas .= "Forma de pago: {$forma_pago}\n\n";
         $notas .= "Detalle del pedido:\n";
@@ -141,7 +156,7 @@ class Carrito extends Controller
             $total += $subtotal;
             
             $pedidoData = [
-                'usuario_id' => auth()->loggedIn() ? auth()->id() : null,
+                'usuario_id' => $usuarioId,
                 'plato_id' => $plato_id,
                 'cantidad' => $item['cantidad'],
                 'total' => $subtotal,
