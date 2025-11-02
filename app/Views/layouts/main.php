@@ -93,7 +93,17 @@
             <li class="nav-item"><a class="nav-link" href="<?= site_url('menu') ?>">Menú</a></li>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/pedidos') ?>">Pedidos</a></li>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/stock') ?>">Stock</a></li>
-            <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/usuarios') ?>">Usuarios</a></li>
+            <li class="nav-item"><a class="nav-link" href="<?= site_url('usuario') ?>">Usuarios</a></li>
+            <li class="nav-item"><a class="nav-link" href="<?= site_url('logout') ?>">Logout</a></li>
+          <?php elseif (auth()->loggedIn() && auth()->user()->inGroup('vendedor')) : ?>
+            <li class="nav-item"><a class="nav-link" href="<?= site_url('menu') ?>">Menú</a></li>
+            <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/pedidos') ?>">Pedidos</a></li>
+            <li class="nav-item">
+              <a class="nav-link" href="<?= site_url('carrito') ?>">
+                <i class="bi bi-cart3"></i> Carrito
+                <span class="badge badge-cart" id="cart-count">0</span>
+              </a>
+            </li>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('logout') ?>">Logout</a></li>
           <?php else : ?>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('menu') ?>">Menú</a></li>
@@ -104,9 +114,11 @@
               </a>
             </li>
             <?php if (auth()->loggedIn()) : ?>
+              <li class="nav-item"><a class="nav-link" href="<?= site_url('pedido') ?>">Mis Pedidos</a></li>
               <li class="nav-item"><a class="nav-link" href="<?= site_url('logout') ?>">Logout</a></li>
             <?php else : ?>
               <li class="nav-item"><a class="nav-link" href="<?= site_url('login') ?>">Login</a></li>
+              <li class="nav-item"><a class="nav-link" href="<?= site_url('register') ?>">Registrarse</a></li>
             <?php endif; ?>
           <?php endif; ?>
         </ul>
@@ -132,26 +144,20 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-      const cartCount = document.getElementById('cart-count');
-      if (cartCount) {
-        cartCount.textContent = cart.reduce((sum, item) => sum + item.cantidad, 0);
-      }
+      actualizarContadorCarrito();
     });
+    
+    function actualizarContadorCarrito() {
+      fetch('<?= site_url('carrito/getCount') ?>')
+        .then(response => response.json())
+        .then(data => {
+          const cartCount = document.getElementById('cart-count');
+          if (cartCount) {
+            cartCount.textContent = data.cart_count;
+          }
+        })
+        .catch(error => console.error('Error:', error));
+    }
   </script>
 </body>
 </html>
-```
-
-**Cambios realizados:**
-
-1. ✅ **Eliminé todos los botones "Home"** de ambas versiones (admin y público)
-2. ✅ **Agregué imagen al logo** con `<img>` antes del texto "La Bartola"
-3. ✅ **CSS para el logo**: flexbox con gap de 12px, altura de 40px
-4. ✅ **Corregí el grupo**: cambié `'admin', 'superadmin'` a solo `'admin'`
-
-**Ahora coloca tu imagen:**
-
-Crea la carpeta y sube tu logo:
-```
-public/assets/images/logo.png

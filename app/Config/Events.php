@@ -53,3 +53,11 @@ Events::on('pre_system', static function (): void {
         }
     }
 });
+Events::on('register', static function ($user) {
+    $db = \Config\Database::connect();
+    $db->table('auth_groups_users')->insert([
+        'user_id' => $user->id,
+        'group' => 'cliente',
+        'created_at' => date('Y-m-d H:i:s')
+    ]);
+});

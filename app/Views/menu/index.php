@@ -47,7 +47,6 @@
             </div>
           </div>
 
-          <!-- Modal para cada plato -->
           <div class="modal fade" id="modalPedir<?= $p['id'] ?>" tabindex="-1">
             <div class="modal-dialog">
               <div class="modal-content bg-dark text-light">
@@ -55,7 +54,7 @@
                   <h5 class="modal-title text-warning"><?= esc($p['nombre']) ?></h5>
                   <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form action="<?= site_url('pedido/crear') ?>" method="post">
+                <form id="formAgregarCarrito<?= $p['id'] ?>" class="form-agregar-carrito">
                   <?= csrf_field() ?>
                   <input type="hidden" name="plato_id" value="<?= $p['id'] ?>">
                   
@@ -96,7 +95,7 @@
                   
                   <div class="modal-footer border-warning">
                     <button type="button" class="btn btn-outline-warning" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-warning">Confirmar Pedido</button>
+                    <button type="submit" class="btn btn-warning">Agregar al Carrito</button>
                   </div>
                 </form>
               </div>
@@ -114,5 +113,52 @@
     </div>
   </div>
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const forms = document.querySelectorAll('.form-agregar-carrito');
+  
+  forms.forEach(form => {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const formData = new FormData(this);
+      const modal = bootstrap.Modal.getInstance(this.closest('.modal'));
+      
+      fetch('<?= site_url('carrito/agregar') ?>', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById('cart-count').textContent = data.cart_count;
+          
+          modal.hide();
+          
+          const alert = document.createElement('div');
+          alert.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+          alert.style.zIndex = '9999';
+          alert.innerHTML = `
+            <i class="bi bi-check-circle me-2"></i>${data.message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          `;
+          document.body.appendChild(alert);
+          
+          setTimeout(() => alert.remove(), 3000);
+          
+          this.reset();
+        } else {
+          alert('Error: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Error al agregar al carrito');
+      });
+    });
+  });
+});
+</script>
 
 <?= $this->endSection() ?>
