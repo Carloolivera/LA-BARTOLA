@@ -50,8 +50,13 @@ $routes->group('admin', ['filter' => 'group:admin'], function($routes) {
     $routes->post('pedidos/eliminar/(:num)', 'Admin\Pedidos::eliminar/$1');
     $routes->get('pedidos/imprimir/(:num)', 'Admin\Pedidos::imprimirTicket/$1');
 
+    // STOCK
+    $routes->get('stock', 'Admin\Stock::index');
+    $routes->get('stock/editar/(:num)', 'Admin\Stock::editar/$1');
+    $routes->post('stock/actualizar/(:num)', 'Admin\Stock::actualizar/$1');
+    $routes->post('stock/ajusteRapido', 'Admin\Stock::ajusteRapido');
+
     // OTROS
-    $routes->get('stock', 'Admin::stock');
     $routes->get('usuarios', 'Admin::usuarios');
     $routes->post('actualizarEstadoPedido', 'Admin::actualizarEstadoPedido');
 });

@@ -30,19 +30,28 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <?php 
+                    <?php
                     $total = 0;
-                    foreach ($carrito as $id => $item): 
+                    $db = \Config\Database::connect();
+                    foreach ($carrito as $id => $item):
                         $subtotal = $item['precio'] * $item['cantidad'];
                         $total += $subtotal;
+
+                        // Obtener información del stock del plato
+                        $plato = $db->table('platos')->where('id', $id)->get()->getRowArray();
+                        $stockMax = ($plato && $plato['stock_ilimitado'] == 0) ? $plato['stock'] : 99;
+                        $stockInfo = ($plato && $plato['stock_ilimitado'] == 0) ? "Stock: {$plato['stock']}" : "Stock ilimitado";
                     ?>
                         <tr>
-                            <td><?= esc($item['nombre']) ?></td>
+                            <td>
+                                <?= esc($item['nombre']) ?>
+                                <br><small class="text-muted"><?= $stockInfo ?></small>
+                            </td>
                             <td>$<?= number_format($item['precio'], 2) ?></td>
                             <td>
                                 <form action="<?= site_url('carrito/actualizar') ?>" method="post" class="d-inline">
                                     <input type="hidden" name="plato_id" value="<?= $id ?>">
-                                    <input type="number" name="cantidad" value="<?= $item['cantidad'] ?>" min="1" class="form-control form-control-sm d-inline" style="width: 70px;">
+                                    <input type="number" name="cantidad" value="<?= $item['cantidad'] ?>" min="1" max="<?= $stockMax ?>" class="form-control form-control-sm d-inline" style="width: 70px;">
                                     <button type="submit" class="btn btn-sm btn-warning">Actualizar</button>
                                 </form>
                             </td>

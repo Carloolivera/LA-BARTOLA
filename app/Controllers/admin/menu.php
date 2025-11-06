@@ -14,8 +14,8 @@ class Menu extends BaseController
     public function __construct()
     {
         $this->platoModel = new PlatoModel();
-        // Carpeta que creaste: writable/uploads/platos
-        $this->uploadPath = WRITEPATH . 'uploads/platos';
+        // Carpeta de imágenes en public
+        $this->uploadPath = ROOTPATH . 'public/assets/images/platos';
     }
 
     public function index()
@@ -51,7 +51,7 @@ class Menu extends BaseController
         $rules = [
             'nombre'  => 'required|min_length[3]|max_length[255]',
             'precio'  => 'required|numeric',
-            'imagen'  => 'uploaded[imagen]|is_image[imagen]|max_size[imagen,2048]',
+            'imagen'  => 'uploaded[imagen]|is_image[imagen]',
             'stock'   => 'required|integer|greater_than_equal_to[0]',
         ];
 
@@ -117,7 +117,7 @@ class Menu extends BaseController
         $rules = [
             'nombre' => 'required|min_length[3]|max_length[255]',
             'precio' => 'required|numeric',
-            'imagen' => 'permit_empty|is_image[imagen]|max_size[imagen,2048]',
+            'imagen' => 'permit_empty|is_image[imagen]',
             'stock'  => 'required|integer|greater_than_equal_to[0]',
         ];
 

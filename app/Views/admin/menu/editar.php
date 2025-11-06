@@ -54,7 +54,7 @@
               <?php if (! empty($plato['imagen'])): ?>
                 <div class="mb-3">
                   <label class="form-label">Imagen actual</label>
-                  <div><img src="<?= base_url('writable/uploads/platos/' . $plato['imagen']) ?>" style="max-width:300px;"></div>
+                  <div><img src="<?= base_url('assets/images/platos/' . $plato['imagen']) ?>" style="max-width:300px;"></div>
                 </div>
               <?php endif; ?>
 

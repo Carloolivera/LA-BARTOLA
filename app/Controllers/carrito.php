@@ -30,7 +30,7 @@ class Carrito extends Controller
 
             if (!$plato_id || !$cantidad) {
                 return $this->response->setJSON([
-                    'success' => false, 
+                    'success' => false,
                     'message' => 'Datos incompletos'
                 ]);
             }
@@ -40,15 +40,45 @@ class Carrito extends Controller
 
             if (!$plato) {
                 return $this->response->setJSON([
-                    'success' => false, 
+                    'success' => false,
                     'message' => 'Plato no encontrado'
+                ]);
+            }
+
+            // Verificar disponibilidad
+            if (!$plato['disponible']) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Este plato no está disponible actualmente'
                 ]);
             }
 
             $carrito = $this->session->get('carrito') ?? [];
 
+            // Calcular cantidad total que tendría en el carrito
+            $cantidadActual = isset($carrito[$plato_id]) ? $carrito[$plato_id]['cantidad'] : 0;
+            $cantidadTotal = $cantidadActual + $cantidad;
+
+            // Verificar stock (solo si no es ilimitado)
+            if ($plato['stock_ilimitado'] == 0) {
+                if ($plato['stock'] <= 0) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Este plato está agotado'
+                    ]);
+                }
+
+                if ($cantidadTotal > $plato['stock']) {
+                    $disponible = $plato['stock'] - $cantidadActual;
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => "Solo puedes agregar {$disponible} unidad(es) más. Stock disponible: {$plato['stock']}"
+                    ]);
+                }
+            }
+
             if (isset($carrito[$plato_id])) {
-                $carrito[$plato_id]['cantidad'] += $cantidad;
+                $carrito[$plato_id]['cantidad'] = $cantidadTotal;
             } else {
                 $carrito[$plato_id] = [
                     'nombre' => $plato['nombre'],
@@ -78,17 +108,36 @@ class Carrito extends Controller
     public function actualizar()
     {
         $plato_id = $this->request->getPost('plato_id');
-        $cantidad = $this->request->getPost('cantidad');
+        $cantidad = (int)$this->request->getPost('cantidad');
+
+        if ($cantidad < 1) {
+            return redirect()->to('/carrito')->with('error', 'La cantidad debe ser al menos 1');
+        }
 
         $carrito = $this->session->get('carrito') ?? [];
 
-        if (isset($carrito[$plato_id])) {
-            $carrito[$plato_id]['cantidad'] = $cantidad;
-            $this->session->set('carrito', $carrito);
-            return redirect()->to('/carrito')->with('success', 'Cantidad actualizada');
+        if (!isset($carrito[$plato_id])) {
+            return redirect()->to('/carrito')->with('error', 'Plato no encontrado en el carrito');
         }
 
-        return redirect()->to('/carrito')->with('error', 'Plato no encontrado en el carrito');
+        // Verificar stock del plato
+        $db = \Config\Database::connect();
+        $plato = $db->table('platos')->where('id', $plato_id)->get()->getRowArray();
+
+        if (!$plato) {
+            return redirect()->to('/carrito')->with('error', 'Plato no encontrado');
+        }
+
+        // Verificar stock (solo si no es ilimitado)
+        if ($plato['stock_ilimitado'] == 0) {
+            if ($cantidad > $plato['stock']) {
+                return redirect()->to('/carrito')->with('error', "Stock insuficiente. Disponible: {$plato['stock']} unidad(es)");
+            }
+        }
+
+        $carrito[$plato_id]['cantidad'] = $cantidad;
+        $this->session->set('carrito', $carrito);
+        return redirect()->to('/carrito')->with('success', 'Cantidad actualizada');
     }
 
     public function eliminar()
@@ -157,7 +206,7 @@ class Carrito extends Controller
     foreach ($carrito as $plato_id => $item) {
         $subtotal = $item['precio'] * $item['cantidad'];
         $total += $subtotal;
-        
+
         $pedidoData = [
             'usuario_id' => $usuarioId,
             'plato_id' => $plato_id,
@@ -168,6 +217,22 @@ class Carrito extends Controller
         ];
 
         $db->table('pedidos')->insert($pedidoData);
+
+        // Descontar stock y marcar como no disponible si se agota
+        $plato = $db->table('platos')->where('id', $plato_id)->get()->getRowArray();
+
+        if ($plato && $plato['stock_ilimitado'] == 0) {
+            $nuevoStock = $plato['stock'] - $item['cantidad'];
+
+            // Si el stock llega a 0 o menos, marcar como no disponible
+            $updateData = ['stock' => max(0, $nuevoStock)];
+
+            if ($nuevoStock <= 0) {
+                $updateData['disponible'] = 0;
+            }
+
+            $db->table('platos')->where('id', $plato_id)->update($updateData);
+        }
     }
 
     $this->session->remove('carrito');
