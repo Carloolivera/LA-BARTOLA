@@ -54,7 +54,7 @@
               <div class="mb-3">
                 <label class="form-label">Imagen *</label>
                 <input type="file" name="imagen" class="form-control bg-dark text-light" accept="image/*" required>
-                <small class="text-muted">Max 2MB</small>
+                <small class="text-muted">Sin límite de tamaño</small>
               </div>
 
               <div class="form-check form-switch mb-3">

@@ -27,7 +27,7 @@
           <div class="col-md-6 col-lg-4">
             <div class="card bg-dark text-light h-100">
               <?php if (! empty($plato['imagen'])): ?>
-                <img src="<?= base_url('writable/uploads/platos/' . $plato['imagen']) ?>" class="card-img-top" style="height:200px; object-fit:cover;">
+                <img src="<?= base_url('assets/images/platos/' . $plato['imagen']) ?>" class="card-img-top" style="height:200px; object-fit:cover;">
               <?php endif; ?>
               <div class="card-body">
                 <div class="d-flex justify-content-between">

@@ -7,7 +7,32 @@
 
     <?php if (session()->getFlashdata('success')): ?>
       <div class="alert alert-success alert-dismissible fade show">
-        <?= session()->getFlashdata('success') ?>
+        <h5 class="alert-heading"><i class="bi bi-check-circle-fill me-2"></i>¡Compra Realizada!</h5>
+        <p class="mb-3"><?= session()->getFlashdata('success') ?></p>
+        <hr>
+        <h6 class="mb-2"><strong>La Bartola - Casa de Comidas</strong></h6>
+        <div class="row g-2 small">
+          <div class="col-md-6">
+            <p class="mb-1">
+              <i class="bi bi-instagram"></i> Instagram:
+              <a href="https://instagram.com/labartolaok" target="_blank" class="text-dark fw-bold">@labartolaok</a>
+            </p>
+            <p class="mb-1">
+              <i class="bi bi-whatsapp"></i> WhatsApp:
+              <a href="https://wa.me/542241517665" target="_blank" class="text-dark fw-bold">2241 517665</a>
+            </p>
+          </div>
+          <div class="col-md-6">
+            <p class="mb-1">
+              <i class="bi bi-geo-alt-fill"></i> Dirección:
+              <strong>Newbery 356</strong>
+            </p>
+            <p class="mb-1">
+              <i class="bi bi-clock-fill"></i> Horario:
+              <strong>19:30hs - 23:00hs</strong>
+            </p>
+          </div>
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
       </div>
     <?php endif; ?>
