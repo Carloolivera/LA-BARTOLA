@@ -77,9 +77,9 @@ $routes->group('admin', ['filter' => 'group:admin'], function($routes) {
 $routes->get('contacto', 'Contacto::index');
 $routes->post('contacto/enviar', 'Contacto::enviar');
 
-// ---------------- AUTH GOOGLE ----------------
-$routes->get('auth/google', 'Auth\GoogleAuth::redirect');
-$routes->get('auth/google/callback', 'Auth\GoogleAuth::callback');
+// ---------------- OAUTH GOOGLE ----------------
+$routes->get('oauth/google', 'OAuth::googleRedirect');
+$routes->get('oauth/google/callback', 'OAuth::googleCallback');
 
 // ---------------- AUTH SHIELD ----------------
 service('auth')->routes($routes, ['except' => ['login', 'register']]);
