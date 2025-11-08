@@ -43,3 +43,7 @@ npm-debug.log
 
 # Environment
 .env.example
+docker-compose.yml
+.env
+writable/uploads/*
+vendor/

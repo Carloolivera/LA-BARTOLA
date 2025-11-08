@@ -16,6 +16,12 @@ class Pedido extends Controller
             return redirect()->to('/login')->with('error', 'Debes iniciar sesión para ver tus pedidos');
         }
 
+        // Verificar que no sea admin o vendedor
+        $user = auth()->user();
+        if ($user && ($user->inGroup('admin') || $user->inGroup('vendedor'))) {
+            return redirect()->to('/admin/pedidos')->with('error', 'Los administradores deben usar el panel de administración');
+        }
+
         $pedidoModel = new PedidoModel();
         
         $data['pedidos'] = $pedidoModel
@@ -32,6 +38,12 @@ class Pedido extends Controller
     {
         if (!auth()->loggedIn()) {
             return redirect()->to('/login')->with('error', 'Debes iniciar sesión para hacer un pedido');
+        }
+
+        // Verificar que no sea admin o vendedor
+        $user = auth()->user();
+        if ($user && ($user->inGroup('admin') || $user->inGroup('vendedor'))) {
+            return redirect()->to('/admin/pedidos')->with('error', 'Los administradores no pueden realizar pedidos como clientes');
         }
 
         $pedidoModel = new PedidoModel();

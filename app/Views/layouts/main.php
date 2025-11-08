@@ -72,6 +72,66 @@
       top: -8px;
       left: -5px;
     }
+    .notification-bell {
+      position: relative;
+      cursor: pointer;
+    }
+    .notification-badge {
+      position: absolute;
+      top: -5px;
+      right: -8px;
+      background-color: #dc3545;
+      color: white;
+      border-radius: 50%;
+      padding: 2px 6px;
+      font-size: 0.65rem;
+      font-weight: bold;
+    }
+    .notification-dropdown {
+      position: absolute;
+      right: 0;
+      top: 100%;
+      margin-top: 10px;
+      background-color: #1a1a1a;
+      border: 1px solid #d4af37;
+      border-radius: 8px;
+      width: 360px;
+      max-height: 500px;
+      overflow-y: auto;
+      z-index: 1000;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .notification-item {
+      padding: 12px 15px;
+      border-bottom: 1px solid #333;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .notification-item:hover {
+      background-color: #2a2a2a;
+    }
+    .notification-item.unread {
+      background-color: rgba(212, 175, 55, 0.05);
+    }
+    .notification-header {
+      padding: 12px 15px;
+      border-bottom: 1px solid #d4af37;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .notification-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: #d4af37;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #000;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
   </style>
 </head>
 
@@ -94,7 +154,30 @@
             <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/pedidos') ?>">Pedidos</a></li>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/inventario') ?>">📦 Inventario</a></li>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/caja-chica') ?>">💰 Caja Chica</a></li>
+            <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/caja') ?>">Caja</a></li>
+            <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/stock') ?>">Stock</a></li>
+            <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/cupones') ?>">Cupones</a></li>
+            <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/analytics') ?>">Analytics</a></li>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('usuario') ?>">Usuarios</a></li>
+            <li class="nav-item position-relative">
+              <a class="nav-link notification-bell" id="notificationBell" onclick="toggleNotifications()">
+                <i class="bi bi-bell-fill"></i>
+                <span class="notification-badge d-none" id="notificationCount">0</span>
+              </a>
+              <div class="notification-dropdown d-none" id="notificationDropdown">
+                <div class="notification-header">
+                  <h6 class="mb-0 text-warning">Notificaciones</h6>
+                  <button class="btn btn-sm btn-link text-beige p-0" onclick="marcarTodasLeidas()">
+                    Marcar todas como leídas
+                  </button>
+                </div>
+                <div id="notificationList">
+                  <div class="text-center text-muted p-3">
+                    <i class="bi bi-inbox"></i> No hay notificaciones
+                  </div>
+                </div>
+              </div>
+            </li>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('logout') ?>">Logout</a></li>
           <?php elseif (auth()->loggedIn() && auth()->user()->inGroup('vendedor')) : ?>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/menu') ?>">Gestión Menú</a></li>
@@ -115,6 +198,25 @@
             </li>
             <?php if (auth()->loggedIn()) : ?>
               <li class="nav-item"><a class="nav-link" href="<?= site_url('pedido') ?>">Mis Pedidos</a></li>
+              <li class="nav-item position-relative">
+                <a class="nav-link notification-bell" id="notificationBell" onclick="toggleNotifications()">
+                  <i class="bi bi-bell-fill"></i>
+                  <span class="notification-badge d-none" id="notificationCount">0</span>
+                </a>
+                <div class="notification-dropdown d-none" id="notificationDropdown">
+                  <div class="notification-header">
+                    <h6 class="mb-0 text-warning">Notificaciones</h6>
+                    <button class="btn btn-sm btn-link text-beige p-0" onclick="marcarTodasLeidas()">
+                      Marcar todas como leídas
+                    </button>
+                  </div>
+                  <div id="notificationList">
+                    <div class="text-center text-muted p-3">
+                      <i class="bi bi-inbox"></i> No hay notificaciones
+                    </div>
+                  </div>
+                </div>
+              </li>
               <li class="nav-item"><a class="nav-link" href="<?= site_url('logout') ?>">Logout</a></li>
             <?php else : ?>
               <li class="nav-item"><a class="nav-link" href="<?= site_url('login') ?>">Login</a></li>
@@ -145,8 +247,11 @@
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       actualizarContadorCarrito();
+      <?php if (auth()->loggedIn()): ?>
+      iniciarNotificaciones();
+      <?php endif; ?>
     });
-    
+
     function actualizarContadorCarrito() {
       fetch('<?= site_url('carrito/getCount') ?>')
         .then(response => response.json())
@@ -158,6 +263,174 @@
         })
         .catch(error => console.error('Error:', error));
     }
+
+    <?php if (auth()->loggedIn()): ?>
+    // Sistema de Notificaciones en Tiempo Real
+    let notificationEventSource = null;
+
+    function iniciarNotificaciones() {
+      // Cargar notificaciones iniciales
+      cargarNotificaciones();
+
+      // Iniciar conexión SSE para actualizaciones en tiempo real
+      if (typeof(EventSource) !== "undefined") {
+        notificationEventSource = new EventSource('<?= site_url('notificaciones/stream') ?>');
+
+        notificationEventSource.onmessage = function(event) {
+          const data = JSON.parse(event.data);
+
+          // Actualizar contador
+          actualizarContadorNotificaciones(data.no_leidas);
+
+          // Recargar lista de notificaciones
+          cargarNotificaciones();
+
+          // Mostrar notificación del navegador si está permitido
+          if (data.notificaciones.length > 0 && Notification.permission === "granted") {
+            const ultimaNotif = data.notificaciones[0];
+            new Notification(ultimaNotif.titulo, {
+              body: ultimaNotif.mensaje,
+              icon: '<?= base_url('assets/images/logo.png') ?>',
+              tag: 'notif-' + ultimaNotif.id
+            });
+          }
+        };
+
+        notificationEventSource.onerror = function() {
+          console.error('Error en la conexión SSE. Reintentando en 5 segundos...');
+          notificationEventSource.close();
+          setTimeout(iniciarNotificaciones, 5000);
+        };
+      }
+
+      // Solicitar permisos para notificaciones del navegador
+      if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+      }
+    }
+
+    function cargarNotificaciones() {
+      fetch('<?= site_url('notificaciones/obtener') ?>')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            actualizarContadorNotificaciones(data.no_leidas);
+            mostrarNotificaciones(data.notificaciones);
+          }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    function actualizarContadorNotificaciones(count) {
+      const badge = document.getElementById('notificationCount');
+      if (badge) {
+        if (count > 0) {
+          badge.textContent = count > 99 ? '99+' : count;
+          badge.classList.remove('d-none');
+        } else {
+          badge.classList.add('d-none');
+        }
+      }
+    }
+
+    function mostrarNotificaciones(notificaciones) {
+      const list = document.getElementById('notificationList');
+      if (!list) return;
+
+      if (notificaciones.length === 0) {
+        list.innerHTML = '<div class="text-center text-muted p-3"><i class="bi bi-inbox"></i> No hay notificaciones</div>';
+        return;
+      }
+
+      let html = '';
+      notificaciones.forEach(notif => {
+        const fecha = new Date(notif.created_at);
+        const tiempoRelativo = calcularTiempoRelativo(fecha);
+        const unreadClass = notif.leida == 0 ? 'unread' : '';
+        const icono = notif.icono || 'bi-info-circle';
+
+        html += `
+          <div class="notification-item ${unreadClass}" onclick="clickNotificacion(${notif.id}, '${notif.url || ''}')">
+            <div class="d-flex">
+              <div class="notification-icon">
+                <i class="bi ${icono}"></i>
+              </div>
+              <div class="flex-grow-1">
+                <h6 class="mb-1 text-beige">${notif.titulo}</h6>
+                <p class="mb-1 small text-muted">${notif.mensaje}</p>
+                <small class="text-warning">${tiempoRelativo}</small>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      list.innerHTML = html;
+    }
+
+    function toggleNotifications() {
+      const dropdown = document.getElementById('notificationDropdown');
+      dropdown.classList.toggle('d-none');
+    }
+
+    function clickNotificacion(id, url) {
+      // Marcar como leída
+      fetch('<?= site_url('notificaciones/marcarLeida') ?>/' + id, {
+        method: 'POST'
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          cargarNotificaciones();
+        }
+      });
+
+      // Redirigir si tiene URL
+      if (url) {
+        window.location.href = url;
+      }
+    }
+
+    function marcarTodasLeidas() {
+      fetch('<?= site_url('notificaciones/marcarTodasLeidas') ?>', {
+        method: 'POST'
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          cargarNotificaciones();
+        }
+      });
+    }
+
+    function calcularTiempoRelativo(fecha) {
+      const ahora = new Date();
+      const diff = Math.floor((ahora - fecha) / 1000);
+
+      if (diff < 60) return 'Hace un momento';
+      if (diff < 3600) return `Hace ${Math.floor(diff / 60)} min`;
+      if (diff < 86400) return `Hace ${Math.floor(diff / 3600)} h`;
+      if (diff < 604800) return `Hace ${Math.floor(diff / 86400)} días`;
+      return fecha.toLocaleDateString();
+    }
+
+    // Cerrar dropdown al hacer click fuera
+    document.addEventListener('click', function(event) {
+      const bell = document.getElementById('notificationBell');
+      const dropdown = document.getElementById('notificationDropdown');
+
+      if (bell && dropdown && !bell.contains(event.target) && !dropdown.contains(event.target)) {
+        dropdown.classList.add('d-none');
+      }
+    });
+
+    // Cerrar conexión SSE al salir de la página
+    window.addEventListener('beforeunload', function() {
+      if (notificationEventSource) {
+        notificationEventSource.close();
+      }
+    });
+    <?php endif; ?>
   </script>
 </body>
 </html>

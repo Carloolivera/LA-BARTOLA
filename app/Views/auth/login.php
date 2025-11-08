@@ -4,10 +4,144 @@
 
 <?= $this->section('main') ?>
 
-    <div class="container d-flex justify-content-center p-5">
-        <div class="card col-12 col-md-5 shadow-sm">
-            <div class="card-body">
-                <h5 class="card-title mb-5"><?= lang('Auth.login') ?></h5>
+<style>
+    .login-container {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 0;
+    }
+
+    .login-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+        max-width: 450px;
+        width: 100%;
+    }
+
+    .login-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2.5rem 2rem;
+        text-align: center;
+    }
+
+    .login-header h2 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 700;
+    }
+
+    .login-header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+        font-size: 0.95rem;
+    }
+
+    .login-body {
+        padding: 2.5rem 2rem;
+    }
+
+    .form-floating > .form-control {
+        border-radius: 10px;
+        border: 2px solid #e0e0e0;
+        padding: 1rem 0.75rem;
+    }
+
+    .form-floating > .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .btn-login {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 10px;
+        padding: 0.875rem;
+        font-weight: 600;
+        font-size: 1.05rem;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-google {
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 0.875rem;
+        font-weight: 600;
+        transition: all 0.2s;
+        background: white;
+        color: #333;
+    }
+
+    .btn-google:hover {
+        border-color: #DB4437;
+        background: #DB4437;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(219, 68, 55, 0.2);
+    }
+
+    .divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 1.5rem 0;
+    }
+
+    .divider::before,
+    .divider::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .divider span {
+        padding: 0 1rem;
+        color: #999;
+        font-size: 0.9rem;
+    }
+
+    .form-check-input:checked {
+        background-color: #667eea;
+        border-color: #667eea;
+    }
+
+    .login-footer {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #e0e0e0;
+        text-align: center;
+    }
+
+    .login-footer a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .login-footer a:hover {
+        color: #764ba2;
+        text-decoration: underline;
+    }
+</style>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h2>Bienvenido</h2>
+                <p>Inicia sesión en tu cuenta</p>
+            </div>
+
+            <div class="login-body">
 
                 <?php if (session('error') !== null) : ?>
                     <div class="alert alert-danger" role="alert"><?= esc(session('error')) ?></div>
@@ -32,19 +166,21 @@
                     <div class="alert alert-success" role="alert"><?= esc(session('success')) ?></div>
                 <?php endif ?>
 
-                <!-- Botón de Google OAuth -->
-                <div class="d-grid col-12 mx-auto mb-4">
-                    <a href="<?= site_url('oauth/google') ?>" class="btn btn-outline-danger btn-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-google me-2" viewBox="0 0 16 16">
-                            <path d="M15.545 6.558a9.4 9.4 0 0 1 .139 1.626c0 2.434-.87 4.492-2.384 5.885h.002C11.978 15.292 10.158 16 8 16A8 8 0 1 1 8 0a7.7 7.7 0 0 1 5.352 2.082l-2.284 2.284A4.35 4.35 0 0 0 8 3.166c-2.087 0-3.86 1.408-4.492 3.304a4.8 4.8 0 0 0 0 3.063h.003c.635 1.893 2.405 3.301 4.492 3.301 1.078 0 2.004-.276 2.722-.764h-.003a3.7 3.7 0 0 0 1.599-2.431H8v-3.08z"/>
-                        </svg>
-                        Continuar con Google
-                    </a>
-                </div>
+                <!-- Botón de Google OAuth (solo si está configurado) -->
+                <?php if (getenv('GOOGLE_CLIENT_ID') && getenv('GOOGLE_CLIENT_ID') !== 'TU_CLIENT_ID_AQUI.apps.googleusercontent.com') : ?>
+                    <div class="d-grid mb-3">
+                        <a href="<?= site_url('oauth/google') ?>" class="btn btn-google btn-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-google me-2" viewBox="0 0 16 16">
+                                <path d="M15.545 6.558a9.4 9.4 0 0 1 .139 1.626c0 2.434-.87 4.492-2.384 5.885h.002C11.978 15.292 10.158 16 8 16A8 8 0 1 1 8 0a7.7 7.7 0 0 1 5.352 2.082l-2.284 2.284A4.35 4.35 0 0 0 8 3.166c-2.087 0-3.86 1.408-4.492 3.304a4.8 4.8 0 0 0 0 3.063h.003c.635 1.893 2.405 3.301 4.492 3.301 1.078 0 2.004-.276 2.722-.764h-.003a3.7 3.7 0 0 0 1.599-2.431H8v-3.08z"/>
+                            </svg>
+                            Continuar con Google
+                        </a>
+                    </div>
 
-                <div class="text-center mb-3">
-                    <span class="text-muted">- o -</span>
-                </div>
+                    <div class="divider">
+                        <span>o continúa con email</span>
+                    </div>
+                <?php endif ?>
 
                 <form action="<?= url_to('login') ?>" method="post">
                     <?= csrf_field() ?>
@@ -71,17 +207,19 @@
                         </div>
                     <?php endif; ?>
 
-                    <div class="d-grid col-12 col-md-8 mx-auto m-3">
-                        <button type="submit" class="btn btn-primary btn-block"><?= lang('Auth.login') ?></button>
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-login btn-lg">Iniciar Sesión</button>
                     </div>
 
-                    <?php if (setting('Auth.allowMagicLinkLogins')) : ?>
-                        <p class="text-center"><?= lang('Auth.forgotPassword') ?> <a href="<?= url_to('magic-link') ?>"><?= lang('Auth.useMagicLink') ?></a></p>
-                    <?php endif ?>
+                    <div class="login-footer">
+                        <?php if (setting('Auth.allowMagicLinkLogins')) : ?>
+                            <p class="mb-2"><?= lang('Auth.forgotPassword') ?> <a href="<?= url_to('magic-link') ?>"><?= lang('Auth.useMagicLink') ?></a></p>
+                        <?php endif ?>
 
-                    <?php if (setting('Auth.allowRegistration')) : ?>
-                        <p class="text-center"><?= lang('Auth.needAccount') ?> <a href="<?= url_to('register') ?>"><?= lang('Auth.register') ?></a></p>
-                    <?php endif ?>
+                        <?php if (setting('Auth.allowRegistration')) : ?>
+                            <p class="mb-0"><?= lang('Auth.needAccount') ?> <a href="<?= url_to('register') ?>">Crear cuenta</a></p>
+                        <?php endif ?>
+                    </div>
 
                 </form>
             </div>
