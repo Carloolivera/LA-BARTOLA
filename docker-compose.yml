@@ -1,22 +1,15 @@
 services:
   mysql:
     image: mysql:8.0
-    container_name: labartola_mysql
+    container_name: mysql_docker
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root_password_2024
-      MYSQL_DATABASE: labartola
+      MYSQL_DATABASE: mydb
     ports:
       - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql
-      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - labartola_network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password_2024"]
-      timeout: 5s
-      retries: 10
 
   web:
     build:
@@ -40,7 +33,7 @@ services:
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
-    container_name: labartola_phpmyadmin
+    container_name: phpmyadmin_docker
     restart: always
     environment:
       PMA_HOST: mysql
@@ -50,8 +43,6 @@ services:
       - "8088:80"
     depends_on:
       - mysql
-    networks:
-      - labartola_network
 
 volumes:
   db_data:

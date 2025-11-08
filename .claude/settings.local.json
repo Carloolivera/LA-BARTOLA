@@ -40,7 +40,8 @@
       "Bash(docker exec:*)",
       "Bash(docker logs:*)",
       "Bash(grep:*)",
-      "Bash(docker-compose ps:*)"
+      "Bash(docker-compose ps:*)",
+      "Bash(git rebase:*)"
     ],
     "deny": [],
     "ask": []
