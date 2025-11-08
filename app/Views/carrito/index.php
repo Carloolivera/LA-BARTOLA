@@ -67,81 +67,13 @@
                 </tbody>
                 <tfoot>
                     <tr>
-                        <th colspan="3" class="text-end">Subtotal:</th>
-                        <th id="subtotal">$<?= number_format($total, 2) ?></th>
-                        <th></th>
-                    </tr>
-                    <?php
-                    $cupon_aplicado = session()->get('cupon_aplicado');
-                    $descuento = 0;
-                    if ($cupon_aplicado):
-                        $descuento = $cupon_aplicado['descuento'];
-                    ?>
-                    <tr class="text-success">
-                        <th colspan="3" class="text-end">
-                            Descuento (<?= esc($cupon_aplicado['codigo']) ?>):
-                            <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-2" onclick="quitarCupon()" title="Quitar cupón">
-                                <i class="bi bi-x-circle"></i>
-                            </button>
-                        </th>
-                        <th class="text-success" id="descuento">-$<?= number_format($descuento, 2) ?></th>
-                        <th></th>
-                    </tr>
-                    <?php endif; ?>
-                    <tr class="fw-bold fs-5">
                         <th colspan="3" class="text-end">Total:</th>
-                        <th class="text-warning" id="total">$<?= number_format($total - $descuento, 2) ?></th>
+                        <th>$<?= number_format($total, 2) ?></th>
                         <th></th>
                     </tr>
                 </tfoot>
             </table>
         </div>
-
-        <!-- SECCIÓN DE CUPONES (solo si está logueado) -->
-        <?php if (auth()->loggedIn()): ?>
-        <div class="card bg-dark border-warning mt-4">
-            <div class="card-header bg-transparent border-warning">
-                <h5 class="mb-0 text-warning">
-                    <i class="bi bi-tag-fill"></i> ¿Tienes un cupón de descuento?
-                </h5>
-            </div>
-            <div class="card-body">
-                <?php if ($cupon_aplicado): ?>
-                    <div class="alert alert-success d-flex align-items-center justify-content-between">
-                        <div>
-                            <i class="bi bi-check-circle-fill me-2"></i>
-                            <strong>Cupón aplicado:</strong> <?= esc($cupon_aplicado['codigo']) ?>
-                            <br>
-                            <small><?= esc($cupon_aplicado['descripcion'] ?? '') ?></small>
-                        </div>
-                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="quitarCupon()">
-                            <i class="bi bi-x"></i> Quitar
-                        </button>
-                    </div>
-                <?php else: ?>
-                    <form id="formCupon" class="row g-3" onsubmit="validarCupon(event)">
-                        <div class="col-md-8">
-                            <input
-                                type="text"
-                                class="form-control"
-                                id="codigo_cupon"
-                                name="codigo_cupon"
-                                placeholder="Ingresa tu código de cupón"
-                                style="text-transform: uppercase;"
-                                required
-                            >
-                        </div>
-                        <div class="col-md-4">
-                            <button type="submit" class="btn btn-warning w-100">
-                                <i class="bi bi-check2"></i> Aplicar Cupón
-                            </button>
-                        </div>
-                    </form>
-                    <div id="mensaje_cupon" class="mt-2"></div>
-                <?php endif; ?>
-            </div>
-        </div>
-        <?php endif; ?>
 
         <div class="d-flex justify-content-between mt-4">
             <form action="<?= site_url('carrito/vaciar') ?>" method="post">
@@ -226,18 +158,15 @@
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="forma_pago" id="mercado_pago" value="mercado_pago" required>
-                                <label class="form-check-label" for="mercado_pago">
-                                    <img src="https://http2.mlstatic.com/storage/logos-api-admin/0daa1670-5c26-11ec-ae75-df2bef173be2-xl@2x.png" height="24" style="vertical-align: middle;" alt="Mercado Pago">
-                                    Mercado Pago
-                                </label>
+                                <label class="form-check-label" for="mercado_pago">Mercado Pago</label>
                             </div>
                         </div>
                     </div>
 
                     <div class="alert alert-info" id="mercado_pago_info" style="display: none;">
-                        <i class="bi bi-info-circle"></i>
-                        <strong>Mercado Pago:</strong> Serás redirigido a Mercado Pago para completar el pago de forma segura.
-                        Podrás pagar con tarjeta de crédito, débito o efectivo.
+                        <h6 class="text-dark">Datos para transferencia:</h6>
+                        <p class="mb-1"><strong>CBU:</strong> <span id="cbu_value">AQUI_VA_TU_CBU</span></p>
+                        <p class="mb-0"><strong>ALIAS:</strong> <span id="alias_value">AQUI_VA_TU_ALIAS</span></p>
                     </div>
                 </div>
                 <div class="modal-footer border-warning">
@@ -250,90 +179,6 @@
 </div>
 
 <script>
-// Funciones para cupones
-function validarCupon(event) {
-    event.preventDefault();
-
-    const codigo = document.getElementById('codigo_cupon').value.trim().toUpperCase();
-    const mensajeDiv = document.getElementById('mensaje_cupon');
-
-    if (!codigo) {
-        mensajeDiv.innerHTML = '<div class="alert alert-warning">Por favor ingresa un código de cupón</div>';
-        return;
-    }
-
-    // Mostrar loading
-    mensajeDiv.innerHTML = '<div class="alert alert-info"><i class="bi bi-hourglass-split"></i> Validando cupón...</div>';
-
-    fetch('<?= site_url('carrito/validarCupon') ?>', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ codigo: codigo })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.valido) {
-            // Cupón válido, aplicarlo
-            aplicarCupon(codigo, data);
-        } else {
-            mensajeDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-x-circle"></i> ${data.mensaje}</div>`;
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        mensajeDiv.innerHTML = '<div class="alert alert-danger">Error al validar el cupón. Inténtalo nuevamente.</div>';
-    });
-}
-
-function aplicarCupon(codigo, validacionData) {
-    const mensajeDiv = document.getElementById('mensaje_cupon');
-
-    fetch('<?= site_url('carrito/aplicarCupon') ?>', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ codigo: codigo })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Recargar la página para mostrar el descuento
-            location.reload();
-        } else {
-            mensajeDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-x-circle"></i> ${data.mensaje}</div>`;
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        mensajeDiv.innerHTML = '<div class="alert alert-danger">Error al aplicar el cupón. Inténtalo nuevamente.</div>';
-    });
-}
-
-function quitarCupon() {
-    if (!confirm('¿Estás seguro de que deseas quitar el cupón?')) {
-        return;
-    }
-
-    fetch('<?= site_url('carrito/quitarCupon') ?>', {
-        method: 'POST'
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('Error al quitar el cupón');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error al quitar el cupón');
-    });
-}
-
 document.addEventListener('DOMContentLoaded', function() {
     const deliveryRadio = document.getElementById('delivery');
     const paraLlevarRadio = document.getElementById('para_llevar');
@@ -380,20 +225,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('formFinalizarPedido').addEventListener('submit', function(e) {
         const formaPago = document.querySelector('input[name="forma_pago"]:checked').value;
-
-        // Si selecciona Mercado Pago, cambiar action del formulario
-        if (formaPago === 'mercado_pago') {
-            this.action = '<?= site_url('mercadopago/crear') ?>';
-        } else {
-            this.action = '<?= site_url('carrito/finalizar') ?>';
-        }
-
-        // Si selecciona QR, hacer petición AJAX
+        
         if (formaPago === 'qr') {
             e.preventDefault();
-
+            
             const formData = new FormData(this);
-
+            
             fetch('<?= site_url('carrito/finalizar') ?>', {
                 method: 'POST',
                 body: formData
