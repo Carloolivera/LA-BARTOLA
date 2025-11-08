@@ -28,8 +28,7 @@ services:
       - "8080:80"
     volumes:
       - .:/var/www/html
-      # ELIMINÉ ESTA LÍNEA QUE ROMPÍA TODO:
-      # - ./writable:/var/www/html/writable   ← ¡ESTA ERA LA QUE MATABA LAS MIGRACIONES!
+      - ./writable:/var/www/html/writable
     environment:
       - CI_ENVIRONMENT=development
     depends_on:
