@@ -46,8 +46,8 @@ class Auth extends ShieldAuth
      * --------------------------------------------------------------------
      */
     public array $views = [
-        'login'                       => '\App\Views\auth\login',
-        'register'                    => '\App\Views\auth\register',
+        'login'                       => '\CodeIgniter\Shield\Views\login',
+        'register'                    => '\CodeIgniter\Shield\Views\register',
         'layout'                      => '\CodeIgniter\Shield\Views\layout',
         'action_email_2fa'            => '\CodeIgniter\Shield\Views\email_2fa_show',
         'action_email_2fa_verify'     => '\CodeIgniter\Shield\Views\email_2fa_verify',
@@ -76,7 +76,7 @@ class Auth extends ShieldAuth
     public array $redirects = [
         'register'          => '/',
         'login'             => '/',
-        'logout'            => '/',
+        'logout'            => 'login',
         'force_reset'       => '/',
         'permission_denied' => '/',
         'group_denied'      => '/',
@@ -257,7 +257,7 @@ class Auth extends ShieldAuth
      * The minimum length that a password must be to be accepted.
      * Recommended minimum value by NIST = 8 characters.
      */
-    public int $minimumPasswordLength = 6;
+    public int $minimumPasswordLength = 8;
 
     /**
      * --------------------------------------------------------------------
@@ -273,7 +273,7 @@ class Auth extends ShieldAuth
     public array $passwordValidators = [
         CompositionValidator::class,
         NothingPersonalValidator::class,
-        // DictionaryValidator::class,
+        DictionaryValidator::class,
         // PwnedValidator::class,
     ];
 

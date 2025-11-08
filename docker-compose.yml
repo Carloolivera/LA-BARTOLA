@@ -1,7 +1,4 @@
-version: '3.8'
-
 services:
-  # Servicio de base de datos MySQL
   mysql:
     image: mysql:8.0
     container_name: labartola_mysql
@@ -21,7 +18,6 @@ services:
       timeout: 5s
       retries: 10
 
-  # Servicio de la aplicación PHP con Apache
   web:
     build:
       context: .
@@ -32,7 +28,8 @@ services:
       - "8080:80"
     volumes:
       - .:/var/www/html
-      - ./writable:/var/www/html/writable
+      # ELIMINÉ ESTA LÍNEA QUE ROMPÍA TODO:
+      # - ./writable:/var/www/html/writable   ← ¡ESTA ERA LA QUE MATABA LAS MIGRACIONES!
     environment:
       - CI_ENVIRONMENT=development
     depends_on:
@@ -41,7 +38,6 @@ services:
     networks:
       - labartola_network
 
-  # Servicio phpMyAdmin
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: labartola_phpmyadmin

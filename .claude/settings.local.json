@@ -39,7 +39,8 @@
       "Bash(docker-compose up:*)",
       "Bash(docker exec:*)",
       "Bash(docker logs:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(docker-compose ps:*)"
     ],
     "deny": [],
     "ask": []
