@@ -3,15 +3,18 @@
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
+use App\Models\NotificacionModel;
 use CodeIgniter\Database\BaseConnection;
 
 class Pedidos extends BaseController
 {
     protected $db;
+    protected $notificacionModel;
 
     public function __construct()
     {
         $this->db = \Config\Database::connect();
+        $this->notificacionModel = new NotificacionModel();
     }
 
     public function index()
@@ -140,8 +143,42 @@ class Pedidos extends BaseController
             $this->devolverStock($pedido['plato_id'], $pedido['cantidad']);
         }
 
+        // Crear notificación para el usuario del pedido
+        $mensajesEstado = [
+            'pendiente' => 'Tu pedido está pendiente de confirmación',
+            'confirmado' => 'Tu pedido ha sido confirmado y está siendo preparado',
+            'en_camino' => 'Tu pedido está en camino',
+            'completado' => '¡Tu pedido ha sido completado!',
+            'cancelado' => 'Tu pedido ha sido cancelado'
+        ];
+
+        $iconosEstado = [
+            'pendiente' => 'bi-clock-fill',
+            'confirmado' => 'bi-check-circle-fill',
+            'en_camino' => 'bi-truck',
+            'completado' => 'bi-check-circle-fill',
+            'cancelado' => 'bi-x-circle-fill'
+        ];
+
+        if (isset($mensajesEstado[$nuevoEstado])) {
+            $this->notificacionModel->crearNotificacion([
+                'usuario_id' => $pedido['usuario_id'],
+                'tipo' => 'cambio_estado_pedido',
+                'titulo' => 'Actualización de Pedido #' . $id,
+                'mensaje' => $mensajesEstado[$nuevoEstado],
+                'icono' => $iconosEstado[$nuevoEstado] ?? 'bi-info-circle',
+                'url' => site_url('pedido'),
+                'leida' => 0,
+                'data' => json_encode([
+                    'pedido_id' => $id,
+                    'estado_anterior' => $estadoAnterior,
+                    'estado_nuevo' => $nuevoEstado
+                ])
+            ]);
+        }
+
         return $this->response->setJSON([
-            'success' => true, 
+            'success' => true,
             'message' => 'Estado actualizado correctamente'
         ]);
     }

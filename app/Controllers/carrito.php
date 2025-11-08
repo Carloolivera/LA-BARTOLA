@@ -3,28 +3,59 @@
 namespace App\Controllers;
 
 use CodeIgniter\Controller;
+use App\Models\PlatoModel;
+use App\Models\NotificacionModel;
+use App\Models\CajaModel;
+use App\Models\CajaMovimientoModel;
 
 class Carrito extends Controller
 {
     protected $session;
+    protected $platoModel;
+    protected $notificacionModel;
+    protected $cajaModel;
+    protected $movimientoModel;
 
     public function __construct()
     {
         $this->session = \Config\Services::session();
+        $this->platoModel = new PlatoModel();
+        $this->notificacionModel = new NotificacionModel();
+        $this->cajaModel = new CajaModel();
+        $this->movimientoModel = new CajaMovimientoModel();
     }
 
     public function index()
     {
+        // Verificar que el usuario logueado no sea admin o vendedor
+        if (auth()->loggedIn()) {
+            $user = auth()->user();
+            if ($user && ($user->inGroup('admin') || $user->inGroup('vendedor'))) {
+                return redirect()->to('/admin/pedidos')->with('error', 'Los administradores deben usar el panel de administración para gestionar pedidos');
+            }
+        }
+
         $carrito = $this->session->get('carrito') ?? [];
-        
+
         $data['carrito'] = $carrito;
-        
+
         return view('carrito/index', $data);
     }
 
     public function agregar()
     {
         try {
+            // Verificar que el usuario logueado no sea admin o vendedor
+            if (auth()->loggedIn()) {
+                $user = auth()->user();
+                if ($user && ($user->inGroup('admin') || $user->inGroup('vendedor'))) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Los administradores y vendedores no pueden realizar pedidos como clientes. Use el panel de administración.'
+                    ]);
+                }
+            }
+
             $plato_id = $this->request->getPost('plato_id');
             $cantidad = (int)$this->request->getPost('cantidad');
 
@@ -35,8 +66,7 @@ class Carrito extends Controller
                 ]);
             }
 
-            $db = \Config\Database::connect();
-            $plato = $db->table('platos')->where('id', $plato_id)->get()->getRowArray();
+            $plato = $this->platoModel->find($plato_id);
 
             if (!$plato) {
                 return $this->response->setJSON([
@@ -121,8 +151,7 @@ class Carrito extends Controller
         }
 
         // Verificar stock del plato
-        $db = \Config\Database::connect();
-        $plato = $db->table('platos')->where('id', $plato_id)->get()->getRowArray();
+        $plato = $this->platoModel->find($plato_id);
 
         if (!$plato) {
             return redirect()->to('/carrito')->with('error', 'Plato no encontrado');
@@ -167,9 +196,15 @@ class Carrito extends Controller
     if (!auth()->loggedIn()) {
         // Guardar la URL actual para redirigir después del login
         session()->set('redirect_url', current_url());
-        
+
         return redirect()->to('/login')
             ->with('error', 'Debe iniciar sesion para realizar un pedido');
+    }
+
+    // Verificar que no sea admin o vendedor
+    $user = auth()->user();
+    if ($user && ($user->inGroup('admin') || $user->inGroup('vendedor'))) {
+        return redirect()->to('/admin/pedidos')->with('error', 'Los administradores no pueden realizar pedidos como clientes');
     }
 
     $carrito = $this->session->get('carrito') ?? [];
@@ -187,39 +222,88 @@ class Carrito extends Controller
             ->with('error', 'Error de sesion. Por favor, inicie sesion nuevamente');
     }
 
-    $nombre_cliente = $this->request->getPost('nombre_cliente');
-    $tipo_entrega = $this->request->getPost('tipo_entrega');
-    $direccion = $this->request->getPost('direccion');
-    $forma_pago = $this->request->getPost('forma_pago');
+    $nombre_cliente = esc($this->request->getPost('nombre_cliente'));
+    $tipo_entrega = esc($this->request->getPost('tipo_entrega'));
+    $direccion = esc($this->request->getPost('direccion'));
+    $forma_pago = esc($this->request->getPost('forma_pago'));
 
-    $db = \Config\Database::connect();
-    
+    // Validar datos requeridos
+    if (empty($nombre_cliente) || empty($tipo_entrega) || empty($forma_pago)) {
+        return redirect()->to('/carrito')->with('error', 'Todos los campos son obligatorios');
+    }
+
+    // Validar tipo de entrega
+    if (!in_array($tipo_entrega, ['retiro', 'delivery'])) {
+        return redirect()->to('/carrito')->with('error', 'Tipo de entrega inválido');
+    }
+
+    // Validar forma de pago
+    if (!in_array($forma_pago, ['efectivo', 'qr', 'tarjeta'])) {
+        return redirect()->to('/carrito')->with('error', 'Forma de pago inválida');
+    }
+
+    $db = db_connect();
+
+    // Calcular total del carrito
+    $total = 0;
+    foreach ($carrito as $item) {
+        $subtotal = $item['precio'] * $item['cantidad'];
+        $total += $subtotal;
+    }
+
+    // Verificar si hay cupón aplicado
+    $cupon_aplicado = $this->session->get('cupon_aplicado');
+    $cupon_id = null;
+    $descuento_cupon = 0;
+
+    if ($cupon_aplicado) {
+        $cupon_id = $cupon_aplicado['cupon']['id'];
+        $descuento_cupon = $cupon_aplicado['descuento'];
+        $total -= $descuento_cupon; // Aplicar descuento al total
+    }
+
+    // Construir notas del pedido
     $notas = "A nombre de: {$nombre_cliente}\n";
     $notas .= "Tipo de entrega: {$tipo_entrega}\n";
     if ($tipo_entrega === 'delivery' && !empty($direccion)) {
         $notas .= "Direccion: {$direccion}\n";
     }
-    $notas .= "Forma de pago: {$forma_pago}\n\n";
-    $notas .= "Detalle del pedido:\n";
+    $notas .= "Forma de pago: {$forma_pago}\n";
+    if ($cupon_aplicado) {
+        $notas .= "Cupón aplicado: {$cupon_aplicado['codigo']} (-$" . number_format($descuento_cupon, 2) . ")\n";
+    }
 
-    $total = 0;
+    // Crear el pedido principal
+    $pedidoData = [
+        'usuario_id' => $usuarioId,
+        'total' => $total,
+        'cupon_id' => $cupon_id,
+        'descuento_cupon' => $descuento_cupon,
+        'estado' => 'pendiente',
+        'tipo_entrega' => $tipo_entrega,
+        'direccion' => $direccion,
+        'forma_pago' => $forma_pago,
+        'notas' => $notas
+    ];
+
+    $pedido_id = $db->table('pedidos')->insert($pedidoData);
+
+    // Insertar los detalles del pedido
     foreach ($carrito as $plato_id => $item) {
         $subtotal = $item['precio'] * $item['cantidad'];
-        $total += $subtotal;
 
-        $pedidoData = [
-            'usuario_id' => $usuarioId,
+        $detalleData = [
+            'pedido_id' => $pedido_id,
             'plato_id' => $plato_id,
             'cantidad' => $item['cantidad'],
-            'total' => $subtotal,
-            'estado' => 'pendiente',
-            'notas' => $notas . $item['nombre'] . ' x' . $item['cantidad']
+            'precio_unitario' => $item['precio'],
+            'subtotal' => $subtotal
         ];
 
-        $db->table('pedidos')->insert($pedidoData);
+        $db->table('pedido_detalle')->insert($detalleData);
 
         // Descontar stock y marcar como no disponible si se agota
-        $plato = $db->table('platos')->where('id', $plato_id)->get()->getRowArray();
+        $plato = $this->platoModel->find($plato_id);
 
         if ($plato && $plato['stock_ilimitado'] == 0) {
             $nuevoStock = $plato['stock'] - $item['cantidad'];
@@ -231,11 +315,54 @@ class Carrito extends Controller
                 $updateData['disponible'] = 0;
             }
 
-            $db->table('platos')->where('id', $plato_id)->update($updateData);
+            $this->platoModel->update($plato_id, $updateData);
         }
     }
 
+    // Registrar uso del cupón si se aplicó uno
+    if ($cupon_aplicado) {
+        $cuponModel = new \App\Models\CuponModel();
+        $cuponModel->registrarUso(
+            $cupon_id,
+            $usuarioId,
+            $descuento_cupon,
+            $pedido_id
+        );
+    }
+
+    // Registrar venta en caja si es en efectivo
+    if ($forma_pago === 'efectivo') {
+        $caja_abierta = $this->cajaModel->obtenerCajaAbierta();
+
+        if ($caja_abierta) {
+            $this->movimientoModel->registrarVenta(
+                $caja_abierta['id'],
+                $pedido_id,
+                $total,
+                'efectivo',
+                $usuarioId
+            );
+        }
+    }
+
+    // Crear notificación para administradores
+    $this->notificacionModel->notificarAdmins(
+        'nuevo_pedido',
+        'Nuevo Pedido Recibido',
+        "Pedido #{$pedido_id} de {$nombre_cliente} por $" . number_format($total, 2),
+        'bi-bag-check-fill',
+        site_url("admin/pedidos/ver/{$pedido_id}"),
+        [
+            'pedido_id' => $pedido_id,
+            'total' => $total,
+            'tipo_entrega' => $tipo_entrega,
+            'forma_pago' => $forma_pago
+        ]
+    );
+
+    // Limpiar carrito y cupón de la sesión
     $this->session->remove('carrito');
+    $this->session->remove('cupon_aplicado');
 
     if ($forma_pago === 'qr') {
         return $this->response->setJSON(['success' => true]);
@@ -253,7 +380,103 @@ class Carrito extends Controller
     {
         $carrito = $this->session->get('carrito') ?? [];
         $cart_count = array_sum(array_column($carrito, 'cantidad'));
-        
+
         return $this->response->setJSON(['cart_count' => $cart_count]);
+    }
+
+    /**
+     * Validar cupón
+     */
+    public function validarCupon()
+    {
+        $codigo = esc($this->request->getPost('codigo'));
+
+        if (empty($codigo)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Ingrese un código de cupón'
+            ]);
+        }
+
+        // Calcular total del carrito
+        $carrito = $this->session->get('carrito') ?? [];
+        $total = 0;
+
+        foreach ($carrito as $item) {
+            $total += $item['precio'] * $item['cantidad'];
+        }
+
+        // Validar cupón
+        $cuponModel = model('App\Models\CuponModel');
+        $resultado = $cuponModel->validarCupon($codigo, auth()->id(), $total);
+
+        return $this->response->setJSON([
+            'success' => $resultado['valido'],
+            'message' => $resultado['mensaje'],
+            'descuento' => $resultado['descuento'] ?? 0,
+            'cupon_id' => $resultado['cupon']['id'] ?? null
+        ]);
+    }
+
+    /**
+     * Aplicar cupón
+     */
+    public function aplicarCupon()
+    {
+        $codigo = esc($this->request->getPost('codigo'));
+
+        if (empty($codigo)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Ingrese un código de cupón'
+            ]);
+        }
+
+        // Calcular total del carrito
+        $carrito = $this->session->get('carrito') ?? [];
+        $total = 0;
+
+        foreach ($carrito as $item) {
+            $total += $item['precio'] * $item['cantidad'];
+        }
+
+        // Validar cupón
+        $cuponModel = model('App\Models\CuponModel');
+        $resultado = $cuponModel->validarCupon($codigo, auth()->id(), $total);
+
+        if (!$resultado['valido']) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $resultado['mensaje']
+            ]);
+        }
+
+        // Guardar cupón en sesión
+        $this->session->set('cupon_aplicado', [
+            'id' => $resultado['cupon']['id'],
+            'codigo' => $codigo,
+            'descuento' => $resultado['descuento']
+        ]);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => $resultado['mensaje'],
+            'descuento' => $resultado['descuento'],
+            'total' => $total,
+            'total_con_descuento' => $total - $resultado['descuento']
+        ]);
+    }
+
+    /**
+     * Quitar cupón
+     */
+    public function quitarCupon()
+    {
+        $this->session->remove('cupon_aplicado');
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Cupón removido'
+        ]);
     }
 }

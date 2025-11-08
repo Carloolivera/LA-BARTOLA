@@ -21,12 +21,25 @@ $routes->get('carrito/getCount', 'Carrito::getCount');
 $routes->group('carrito', ['filter' => 'auth'], function($routes) {
     $routes->post('finalizar', 'Carrito::finalizar');
     $routes->get('mostrarQR', 'Carrito::mostrarQR');
+    $routes->post('validarCupon', 'Carrito::validarCupon');
+    $routes->post('aplicarCupon', 'Carrito::aplicarCupon');
+    $routes->post('quitarCupon', 'Carrito::quitarCupon');
 });
 
 // ---------------- PEDIDOS ----------------
 $routes->group('pedido', ['filter' => 'auth'], function($routes) {
     $routes->get('/', 'Pedido::index');
     $routes->post('crear', 'Pedido::crear');
+});
+
+// ---------------- NOTIFICACIONES ----------------
+$routes->group('notificaciones', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'Notificaciones::index');
+    $routes->get('obtener', 'Notificaciones::obtener');
+    $routes->get('stream', 'Notificaciones::stream');
+    $routes->post('marcarLeida/(:num)', 'Notificaciones::marcarLeida/$1');
+    $routes->post('marcarTodasLeidas', 'Notificaciones::marcarTodasLeidas');
+    $routes->post('eliminar/(:num)', 'Notificaciones::eliminar/$1');
 });
 
 // ---------------- USUARIOS ----------------
@@ -45,7 +58,7 @@ $routes->group('admin', ['filter' => 'group:admin'], function($routes) {
     // PEDIDOS
     $routes->get('pedidos', 'Admin\Pedidos::index');
     $routes->get('pedidos/ver/(:num)', 'Admin\Pedidos::ver/$1');
-    $routes->match(['get', 'post'], 'pedidos/editar/(:num)', 'Admin\Pedidos::editar/$1');
+    $routes->match(['GET', 'POST'], 'pedidos/editar/(:num)', 'Admin\Pedidos::editar/$1');
     $routes->post('pedidos/cambiarEstado/(:num)', 'Admin\Pedidos::cambiarEstado/$1');
     $routes->post('pedidos/eliminar/(:num)', 'Admin\Pedidos::eliminar/$1');
     $routes->get('pedidos/imprimir/(:num)', 'Admin\Pedidos::imprimirTicket/$1');
@@ -55,6 +68,28 @@ $routes->group('admin', ['filter' => 'group:admin'], function($routes) {
     $routes->get('stock/editar/(:num)', 'Admin\Stock::editar/$1');
     $routes->post('stock/actualizar/(:num)', 'Admin\Stock::actualizar/$1');
     $routes->post('stock/ajusteRapido', 'Admin\Stock::ajusteRapido');
+
+    // CUPONES
+    $routes->get('cupones', 'Admin\Cupones::index');
+    $routes->get('cupones/crear', 'Admin\Cupones::crear');
+    $routes->post('cupones/guardar', 'Admin\Cupones::guardar');
+    $routes->get('cupones/editar/(:num)', 'Admin\Cupones::editar/$1');
+    $routes->post('cupones/actualizar/(:num)', 'Admin\Cupones::actualizar/$1');
+    $routes->post('cupones/eliminar/(:num)', 'Admin\Cupones::eliminar/$1');
+    $routes->post('cupones/toggleEstado/(:num)', 'Admin\Cupones::toggleEstado/$1');
+
+    // ANALYTICS
+    $routes->get('analytics', 'Admin\Analytics::index');
+    $routes->get('analytics/exportar', 'Admin\Analytics::exportar');
+
+    // CAJA
+    $routes->get('caja', 'Admin\Caja::index');
+    $routes->post('caja/abrir', 'Admin\Caja::abrir');
+    $routes->post('caja/cerrar/(:num)', 'Admin\Caja::cerrar/$1');
+    $routes->post('caja/registrarIngreso', 'Admin\Caja::registrarIngreso');
+    $routes->post('caja/registrarEgreso', 'Admin\Caja::registrarEgreso');
+    $routes->get('caja/historial', 'Admin\Caja::historial');
+    $routes->get('caja/ver/(:num)', 'Admin\Caja::ver/$1');
 
     // OTROS
     $routes->get('usuarios', 'Admin::usuarios');
@@ -80,6 +115,13 @@ $routes->post('contacto/enviar', 'Contacto::enviar');
 // ---------------- OAUTH GOOGLE ----------------
 $routes->get('oauth/google', 'OAuth::googleRedirect');
 $routes->get('oauth/google/callback', 'OAuth::googleCallback');
+
+// ---------------- MERCADO PAGO ----------------
+$routes->post('mercadopago/crear', 'MercadoPago::crearPreferencia');
+$routes->get('mercadopago/success', 'MercadoPago::success');
+$routes->get('mercadopago/failure', 'MercadoPago::failure');
+$routes->get('mercadopago/pending', 'MercadoPago::pending');
+$routes->post('mercadopago/webhook', 'MercadoPago::webhook');
 
 // ---------------- AUTH SHIELD ----------------
 service('auth')->routes($routes, ['except' => ['login', 'register']]);
