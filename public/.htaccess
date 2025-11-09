@@ -20,7 +20,8 @@ php_value max_input_time 300
 	RewriteEngine On
 
 	# IMPORTANTE: Descomenta y ajusta esta línea para tu subcarpeta
-	RewriteBase /labartola/public/
+	# RewriteBase /labartola/public/
+	RewriteBase /
 
 	# Redirect Trailing Slashes...
 	RewriteCond %{REQUEST_FILENAME} !-d

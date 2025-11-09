@@ -74,9 +74,20 @@ class OAuth extends Controller
             $googleId = $googleData['sub']; // ID único de Google
             $picture = $googleData['picture'] ?? null;
 
-            // Buscar o crear usuario
+            // Buscar usuario por identidad de Google primero
+            $identityModel = model('CodeIgniter\Shield\Models\UserIdentityModel');
+            $identity = $identityModel->where('type', 'google')
+                                      ->where('secret', $googleId)
+                                      ->first();
+
+            // Si existe la identidad, obtener el usuario
             $userModel = new UserModel();
-            $user = $userModel->findByCredentials(['email' => $email]);
+            if ($identity) {
+                $user = $userModel->find($identity->user_id);
+            } else {
+                // Si no, buscar por email
+                $user = $userModel->findByCredentials(['email' => $email]);
+            }
 
             if ($user === null) {
                 // Usuario no existe, crear nuevo
@@ -99,30 +110,30 @@ class OAuth extends Controller
 
                 // Guardar identidad de Google
                 $identityModel = model('CodeIgniter\Shield\Models\UserIdentityModel');
-                $identityModel->insert([
-                    'user_id' => $userId,
-                    'type'    => 'google',
-                    'secret'  => $googleId,
-                    'name'    => $name,
-                    'extra'   => json_encode([
-                        'email'   => $email,
-                        'picture' => $picture,
-                    ]),
-                ]);
 
-                // Asignar grupo por defecto (cliente)
-                $user->addGroup('cliente');
+                // Verificar si ya existe la identidad antes de insertar
+                $existingIdentity = $identityModel->where('user_id', $userId)
+                                                   ->where('type', 'google')
+                                                   ->first();
+
+                if (!$existingIdentity) {
+                    $identityModel->insert([
+                        'user_id' => $userId,
+                        'type'    => 'google',
+                        'secret'  => $googleId,
+                        'name'    => $name,
+                        'extra'   => json_encode([
+                            'email'   => $email,
+                            'picture' => $picture,
+                        ]),
+                    ]);
+                }
 
                 log_message('info', "Nuevo usuario creado vía Google OAuth: {$email}");
             } else {
                 // Usuario existe, verificar si tiene identidad de Google
-                $identityModel = model('CodeIgniter\Shield\Models\UserIdentityModel');
-                $identity = $identityModel->where('user_id', $user->id)
-                                         ->where('type', 'google')
-                                         ->first();
-
                 if (!$identity) {
-                    // Agregar identidad de Google al usuario existente
+                    // Agregar identidad de Google al usuario existente (solo si no la tiene)
                     $identityModel->insert([
                         'user_id' => $user->id,
                         'type'    => 'google',
@@ -133,6 +144,7 @@ class OAuth extends Controller
                             'picture' => $picture,
                         ]),
                     ]);
+                    log_message('info', "Identidad de Google agregada a usuario existente: {$email}");
                 }
 
                 log_message('info', "Usuario existente inició sesión vía Google OAuth: {$email}");

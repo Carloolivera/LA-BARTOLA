@@ -1,0 +1,45 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+writable/logs/*.log
+writable/debugbar/*.json
+writable/cache/*
+writable/session/*
+
+# Composer
+vendor/bin/.phpunit
+vendor/phpunit
+
+# Tests
+tests
+phpunit.xml
+.phpunit.result.cache
+
+# Documentation
+*.md
+docs
+
+# Node (si usas)
+node_modules
+npm-debug.log
+
+# Environment
+.env.example
