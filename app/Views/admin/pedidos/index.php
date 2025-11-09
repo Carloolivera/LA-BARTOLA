@@ -77,7 +77,7 @@
                                     <td>
                                         <?= esc($pedido['username'] ?? 'Usuario eliminado') ?>
                                         <br>
-                                        <small class="text-muted"><?= esc($pedido['email'] ?? '') ?></small>
+                                        <small class="text-light" style="opacity: 0.7;"><?= esc($pedido['email'] ?? '') ?></small>
                                     </td>
                                     <td>
                                         <strong><?= esc($pedido['info_pedido']['nombre_cliente']) ?></strong>

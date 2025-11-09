@@ -159,25 +159,6 @@
             <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/cupones') ?>">Cupones</a></li>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/analytics') ?>">Analytics</a></li>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('usuario') ?>">Usuarios</a></li>
-            <li class="nav-item position-relative">
-              <a class="nav-link notification-bell" id="notificationBell" onclick="toggleNotifications()">
-                <i class="bi bi-bell-fill"></i>
-                <span class="notification-badge d-none" id="notificationCount">0</span>
-              </a>
-              <div class="notification-dropdown d-none" id="notificationDropdown">
-                <div class="notification-header">
-                  <h6 class="mb-0 text-warning">Notificaciones</h6>
-                  <button class="btn btn-sm btn-link text-beige p-0" onclick="marcarTodasLeidas()">
-                    Marcar todas como leídas
-                  </button>
-                </div>
-                <div id="notificationList">
-                  <div class="text-center text-muted p-3">
-                    <i class="bi bi-inbox"></i> No hay notificaciones
-                  </div>
-                </div>
-              </div>
-            </li>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('logout') ?>">Logout</a></li>
           <?php elseif (auth()->loggedIn() && auth()->user()->inGroup('vendedor')) : ?>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/menu') ?>">Gestión Menú</a></li>
@@ -248,7 +229,7 @@
     document.addEventListener('DOMContentLoaded', function() {
       actualizarContadorCarrito();
       <?php if (auth()->loggedIn()): ?>
-      iniciarNotificaciones();
+      // iniciarNotificaciones(); // Temporalmente deshabilitado
       <?php endif; ?>
     });
 
@@ -265,6 +246,7 @@
     }
 
     <?php if (auth()->loggedIn()): ?>
+    /* Sistema de Notificaciones - TEMPORALMENTE DESHABILITADO
     // Sistema de Notificaciones en Tiempo Real
     let notificationEventSource = null;
 
@@ -430,6 +412,7 @@
         notificationEventSource.close();
       }
     });
+    FIN DEL BLOQUE COMENTADO */
     <?php endif; ?>
   </script>
 </body>

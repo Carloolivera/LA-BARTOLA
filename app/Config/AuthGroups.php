@@ -57,6 +57,10 @@ class AuthGroups extends ShieldAuthGroups
             'title'       => 'User',
             'description' => 'General users of the site. Often customers.',
         ],
+        'cliente' => [
+            'title'       => 'Cliente',
+            'description' => 'Clientes del restaurante que pueden realizar pedidos.',
+        ],
         'beta' => [
             'title'       => 'Beta User',
             'description' => 'Has access to beta-level features.',
@@ -110,6 +114,7 @@ class AuthGroups extends ShieldAuthGroups
             'beta.access',
         ],
         'user' => [],
+        'cliente' => [],
         'beta' => [
             'beta.access',
         ],

@@ -108,6 +108,10 @@ class OAuth extends Controller
                 // Obtener el usuario recién creado
                 $user = $userModel->find($userId);
 
+                // Asignar el usuario al grupo "cliente"
+                $user->addGroup('cliente');
+                log_message('info', "Usuario asignado al grupo 'cliente': {$email}");
+
                 // Guardar identidad de Google
                 $identityModel = model('CodeIgniter\Shield\Models\UserIdentityModel');
 
