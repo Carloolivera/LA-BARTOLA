@@ -1,0 +1,21 @@
+# Configuración optimizada para desarrollo
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Redirigir todo al index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php/$1 [L]
+</IfModule>
+
+# Deshabilitar listado de directorios
+Options -Indexes
+
+# Configuración de PHP para mejor rendimiento
+<IfModule mod_php.c>
+    php_value memory_limit 256M
+    php_value max_execution_time 60
+    php_value upload_max_filesize 50M
+    php_value post_max_size 50M
+</IfModule>

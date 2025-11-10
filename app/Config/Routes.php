@@ -65,8 +65,8 @@ $routes->group('admin', ['filter' => 'group:admin'], function($routes) {
 
     // INVENTARIO
     $routes->get('inventario', 'Admin\Inventario::index');
-    $routes->match(['get', 'post'], 'inventario/crear', 'Admin\Inventario::crear');
-    $routes->match(['get', 'post'], 'inventario/editar/(:num)', 'Admin\Inventario::editar/$1');
+    $routes->match(['GET', 'POST'], 'inventario/crear', 'Admin\Inventario::crear');
+    $routes->match(['GET', 'POST'], 'inventario/editar/(:num)', 'Admin\Inventario::editar/$1');
     $routes->get('inventario/eliminar/(:num)', 'Admin\Inventario::eliminar/$1');
     $routes->post('inventario/movimiento/(:num)', 'Admin\Inventario::movimiento/$1');
 
@@ -74,7 +74,7 @@ $routes->group('admin', ['filter' => 'group:admin'], function($routes) {
     $routes->get('caja-chica', 'Admin\CajaChica::index');
     $routes->get('caja-chica/ver/(:segment)', 'Admin\CajaChica::ver/$1');
     $routes->post('caja-chica/agregar', 'Admin\CajaChica::agregar');
-    $routes->match(['get', 'post'], 'caja-chica/editar/(:num)', 'Admin\CajaChica::editar/$1');
+    $routes->match(['GET', 'POST'], 'caja-chica/editar/(:num)', 'Admin\CajaChica::editar/$1');
     $routes->get('caja-chica/eliminar/(:num)', 'Admin\CajaChica::eliminar/$1');
     $routes->get('caja-chica/archivo', 'Admin\CajaChica::archivo');
     $routes->get('caja-chica/imprimir/(:segment)', 'Admin\CajaChica::imprimir/$1');
