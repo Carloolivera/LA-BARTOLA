@@ -137,51 +137,90 @@ class Carrito extends Controller
 
     public function actualizar()
     {
-        $plato_id = $this->request->getPost('plato_id');
-        $cantidad = (int)$this->request->getPost('cantidad');
+        try {
+            $plato_id = $this->request->getPost('plato_id');
+            $cantidad = (int)$this->request->getPost('cantidad');
 
-        if ($cantidad < 1) {
-            return redirect()->to('/carrito')->with('error', 'La cantidad debe ser al menos 1');
-        }
-
-        $carrito = $this->session->get('carrito') ?? [];
-
-        if (!isset($carrito[$plato_id])) {
-            return redirect()->to('/carrito')->with('error', 'Plato no encontrado en el carrito');
-        }
-
-        // Verificar stock del plato
-        $plato = $this->platoModel->find($plato_id);
-
-        if (!$plato) {
-            return redirect()->to('/carrito')->with('error', 'Plato no encontrado');
-        }
-
-        // Verificar stock (solo si no es ilimitado)
-        if ($plato['stock_ilimitado'] == 0) {
-            if ($cantidad > $plato['stock']) {
-                return redirect()->to('/carrito')->with('error', "Stock insuficiente. Disponible: {$plato['stock']} unidad(es)");
+            if ($cantidad < 1) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'La cantidad debe ser al menos 1'
+                ]);
             }
-        }
 
-        $carrito[$plato_id]['cantidad'] = $cantidad;
-        $this->session->set('carrito', $carrito);
-        return redirect()->to('/carrito')->with('success', 'Cantidad actualizada');
+            $carrito = $this->session->get('carrito') ?? [];
+
+            if (!isset($carrito[$plato_id])) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Plato no encontrado en el carrito'
+                ]);
+            }
+
+            // Verificar stock del plato
+            $plato = $this->platoModel->find($plato_id);
+
+            if (!$plato) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Plato no encontrado'
+                ]);
+            }
+
+            // Verificar stock (solo si no es ilimitado)
+            if ($plato['stock_ilimitado'] == 0) {
+                if ($cantidad > $plato['stock']) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => "Stock insuficiente. Disponible: {$plato['stock']} unidad(es)"
+                    ]);
+                }
+            }
+
+            $carrito[$plato_id]['cantidad'] = $cantidad;
+            $this->session->set('carrito', $carrito);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Cantidad actualizada'
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error en Carrito::actualizar - ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al actualizar cantidad: ' . $e->getMessage()
+            ]);
+        }
     }
 
     public function eliminar()
     {
-        $plato_id = $this->request->getPost('plato_id');
+        try {
+            $plato_id = $this->request->getPost('plato_id');
 
-        $carrito = $this->session->get('carrito') ?? [];
+            $carrito = $this->session->get('carrito') ?? [];
 
-        if (isset($carrito[$plato_id])) {
-            unset($carrito[$plato_id]);
-            $this->session->set('carrito', $carrito);
-            return redirect()->to('/carrito')->with('success', 'Plato eliminado del carrito');
+            if (isset($carrito[$plato_id])) {
+                unset($carrito[$plato_id]);
+                $this->session->set('carrito', $carrito);
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Plato eliminado del carrito'
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Plato no encontrado en el carrito'
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error en Carrito::eliminar - ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al eliminar producto: ' . $e->getMessage()
+            ]);
         }
-
-        return redirect()->to('/carrito')->with('error', 'Plato no encontrado en el carrito');
     }
 
     public function vaciar()
@@ -364,8 +403,13 @@ class Carrito extends Controller
     $this->session->remove('carrito');
     $this->session->remove('cupon_aplicado');
 
-    if ($forma_pago === 'qr') {
-        return $this->response->setJSON(['success' => true]);
+    // Si es una petición AJAX, devolver JSON
+    if ($this->request->isAJAX() || $forma_pago === 'qr') {
+        return $this->response->setJSON([
+            'success' => true,
+            'pedido_id' => $pedido_id,
+            'message' => 'Pedido realizado exitosamente'
+        ]);
     }
 
     return redirect()->to('/pedido')->with('success', 'Pedido realizado exitosamente');
