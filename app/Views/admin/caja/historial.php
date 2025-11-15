@@ -32,7 +32,7 @@
                     <tbody>
                         <?php if (empty($historial)): ?>
                             <tr>
-                                <td colspan="10" class="text-center text-light py-5">
+                                <td colspan="10" class="text-center text-muted py-5">
                                     <i class="bi bi-inbox display-4 d-block mb-3"></i>
                                     No hay historial de cajas
                                 </td>

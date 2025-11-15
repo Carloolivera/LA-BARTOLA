@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
 # Git
 .git
 .gitignore
@@ -46,21 +43,7 @@ npm-debug.log
 
 # Environment
 .env.example
-=======
->>>>>>> main
-.git
-.gitignore
-README.md
 docker-compose.yml
 .env
-writable/cache/*
-writable/logs/*
-writable/session/*
-writable/debugbar/*
 writable/uploads/*
 vendor/
-node_modules/
-<<<<<<< HEAD
-=======
->>>>>>> 51028a9be6c3ff3512e51dcc6885d422e227cd31
->>>>>>> main

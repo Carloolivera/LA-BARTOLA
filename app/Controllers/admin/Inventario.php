@@ -128,11 +128,11 @@ class Inventario extends BaseController
         }
 
         $tipo = $this->request->getPost('tipo');
-        $cantidad = (int)$this->request->getPost('cantidad');
+        $cantidad = (float)$this->request->getPost('cantidad');
         $motivo = $this->request->getPost('motivo');
 
         if ($cantidad <= 0) {
-            return $this->response->setJSON(['success' => false, 'message' => 'La cantidad debe ser mayor a 0']);
+            return $this->response->setJSON(['success' => false, 'message' => 'Cantidad inválida']);
         }
 
         $nuevaCantidad = $item['cantidad_actual'];

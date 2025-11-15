@@ -200,7 +200,7 @@
                         <tbody>
                             <?php if (empty($movimientos)): ?>
                                 <tr>
-                                    <td colspan="6" class="text-center text-light">No hay movimientos registrados</td>
+                                    <td colspan="6" class="text-center text-muted">No hay movimientos registrados</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($movimientos as $mov): ?>

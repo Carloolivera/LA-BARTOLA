@@ -22,8 +22,8 @@ class InventarioItemModel extends Model
     protected bool $updateOnlyChanged = true;
 
     protected array $casts = [
-        'cantidad_actual' => 'int',
-        'cantidad_minima' => 'int',
+        'cantidad_actual' => 'float',
+        'cantidad_minima' => 'float',
         'precio_unitario' => 'float',
         'activo' => 'boolean',
     ];
@@ -41,8 +41,7 @@ class InventarioItemModel extends Model
         'categoria_id'    => 'required|integer',
         'nombre'          => 'required|min_length[3]|max_length[255]',
         'unidad_medida'   => 'required|max_length[50]',
-        'cantidad_actual' => 'permit_empty|integer|greater_than_equal_to[0]',
-        'cantidad_minima' => 'permit_empty|integer|greater_than_equal_to[0]',
+        'cantidad_actual' => 'permit_empty|decimal|greater_than_equal_to[0]',
     ];
     protected $validationMessages   = [];
     protected $skipValidation       = false;

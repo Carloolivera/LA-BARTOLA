@@ -101,28 +101,6 @@ $routes->group('admin', ['filter' => 'group:admin'], function($routes) {
     $routes->get('caja/historial', 'Admin\Caja::historial');
     $routes->get('caja/ver/(:num)', 'Admin\Caja::ver/$1');
 
-    // CUPONES
-    $routes->get('cupones', 'Admin\Cupones::index');
-    $routes->get('cupones/crear', 'Admin\Cupones::crear');
-    $routes->post('cupones/guardar', 'Admin\Cupones::guardar');
-    $routes->get('cupones/editar/(:num)', 'Admin\Cupones::editar/$1');
-    $routes->post('cupones/actualizar/(:num)', 'Admin\Cupones::actualizar/$1');
-    $routes->post('cupones/eliminar/(:num)', 'Admin\Cupones::eliminar/$1');
-    $routes->post('cupones/toggleEstado/(:num)', 'Admin\Cupones::toggleEstado/$1');
-
-    // ANALYTICS
-    $routes->get('analytics', 'Admin\Analytics::index');
-    $routes->get('analytics/exportar', 'Admin\Analytics::exportar');
-
-    // CAJA
-    $routes->get('caja', 'Admin\Caja::index');
-    $routes->post('caja/abrir', 'Admin\Caja::abrir');
-    $routes->post('caja/cerrar/(:num)', 'Admin\Caja::cerrar/$1');
-    $routes->post('caja/registrarIngreso', 'Admin\Caja::registrarIngreso');
-    $routes->post('caja/registrarEgreso', 'Admin\Caja::registrarEgreso');
-    $routes->get('caja/historial', 'Admin\Caja::historial');
-    $routes->get('caja/ver/(:num)', 'Admin\Caja::ver/$1');
-
     // OTROS
     $routes->get('usuarios', 'Admin::usuarios');
     $routes->post('actualizarEstadoPedido', 'Admin::actualizarEstadoPedido');

@@ -8,16 +8,39 @@ services:
       MYSQL_ROOT_PASSWORD: root_password_2024
       MYSQL_DATABASE: labartola
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql
       - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - labartola_network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password_2024"]
       timeout: 5s
       retries: 10
 
-  # Servicio phpMyAdmin (opcional)
+  # Servicio de la aplicación PHP con Apache
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: labartola_web
+    restart: always
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+      # ELIMINÉ ESTA LÍNEA QUE ROMPÍA TODO:
+      # - ./writable:/var/www/html/writable   ← ¡ESTA ERA LA QUE MATABA LAS MIGRACIONES!
+    environment:
+      - CI_ENVIRONMENT=development
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - labartola_network
+
+  # Servicio phpMyAdmin
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: labartola_phpmyadmin
@@ -30,6 +53,12 @@ services:
       - "8088:80"
     depends_on:
       - mysql
+    networks:
+      - labartola_network
 
 volumes:
   db_data:
+
+networks:
+  labartola_network:
+    driver: bridge

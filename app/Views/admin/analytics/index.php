@@ -151,7 +151,7 @@
                                 <?php endforeach; ?>
                                 <?php if (empty($platos_mas_vendidos)): ?>
                                 <tr>
-                                    <td colspan="3" class="text-center text-light">No hay datos disponibles</td>
+                                    <td colspan="3" class="text-center text-muted">No hay datos disponibles</td>
                                 </tr>
                                 <?php endif; ?>
                             </tbody>
@@ -190,7 +190,7 @@
                                 <?php endforeach; ?>
                                 <?php if (empty($cupones_mas_usados)): ?>
                                 <tr>
-                                    <td colspan="3" class="text-center text-light">No hay datos disponibles</td>
+                                    <td colspan="3" class="text-center text-muted">No hay datos disponibles</td>
                                 </tr>
                                 <?php endif; ?>
                             </tbody>

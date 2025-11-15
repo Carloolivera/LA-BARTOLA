@@ -8,6 +8,20 @@
         </h2>
     </div>
 
+    <?php if (session()->getFlashdata('success')): ?>
+        <div class="alert alert-success alert-dismissible fade show">
+            <?= session()->getFlashdata('success') ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
+    <?php if (session()->getFlashdata('error')): ?>
+        <div class="alert alert-danger alert-dismissible fade show">
+            <?= session()->getFlashdata('error') ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
     <!-- Filtros de estado -->
     <div class="row mb-3">
         <div class="col-md-12">
@@ -54,7 +68,7 @@
                     <tbody>
                         <?php if (empty($pedidos)): ?>
                             <tr>
-                                <td colspan="12" class="text-center text-light">No hay pedidos registrados</td>
+                                <td colspan="12" class="text-center text-muted">No hay pedidos registrados</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($pedidos as $pedido): ?>
@@ -63,7 +77,7 @@
                                     <td>
                                         <?= esc($pedido['username'] ?? 'Usuario eliminado') ?>
                                         <br>
-                                        <small class="text-muted"><?= esc($pedido['email'] ?? '') ?></small>
+                                        <small class="text-light" style="opacity: 0.7;"><?= esc($pedido['email'] ?? '') ?></small>
                                     </td>
                                     <td>
                                         <strong><?= esc($pedido['info_pedido']['nombre_cliente']) ?></strong>

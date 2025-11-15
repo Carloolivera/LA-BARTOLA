@@ -24,6 +24,10 @@ class Home extends Controller
 
         $data['platos'] = $platos;
 
+        // Pasar el carrito de la sesión para restaurarlo
+        $session = session();
+        $data['carrito'] = $session->get('carrito') ?? [];
+
         return view('home', $data);
     }
 }

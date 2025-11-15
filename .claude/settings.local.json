@@ -13,20 +13,6 @@
       "Bash(gh pr view:*)",
       "Bash(git checkout:*)",
       "Bash(git pull:*)",
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-      "Bash(docker-compose ps:*)",
-      "Bash(docker-compose restart:*)",
-      "Bash(docker-compose logs:*)",
-      "Bash(docker exec:*)",
-      "Bash(docker-compose down:*)",
-      "Bash(docker-compose build:*)",
-      "Bash(docker-compose up:*)",
-      "Bash(php spark make:migration:*)",
-      "Bash(php spark migrate:*)"
-=======
->>>>>>> main
       "Bash(if [ -f .env ])",
       "Bash(then grep -A2 \"GOOGLE_CLIENT\" .env)",
       "Bash(else echo \"Archivo .env no existe\")",
@@ -53,11 +39,16 @@
       "Bash(docker-compose up:*)",
       "Bash(docker exec:*)",
       "Bash(docker logs:*)",
-      "Bash(grep:*)"
-<<<<<<< HEAD
-=======
->>>>>>> 51028a9be6c3ff3512e51dcc6885d422e227cd31
->>>>>>> main
+      "Bash(grep:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(git rebase:*)",
+      "Bash(docker-compose restart:*)",
+      "Bash(docker-compose logs:*)",
+      "Bash(docker-compose build:*)",
+      "Bash(php spark make:migration:*)",
+      "Bash(php spark migrate:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(timeout 10 bash:*)"
     ],
     "deny": [],
     "ask": []

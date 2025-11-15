@@ -24,6 +24,20 @@
             </div>
         </div>
 
+        <!-- Alertas -->
+        <?php if (session()->has('success')): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <?= session('success') ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
+        <?php if (session()->has('error')): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <?= session('error') ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
 
         <!-- Formulario Agregar Movimiento -->
         <?php if ($esHoy): ?>
@@ -112,7 +126,7 @@
                             if (empty($movimientos)):
                             ?>
                                 <tr>
-                                    <td colspan="<?= $esHoy ? 7 : 6 ?>" class="text-center py-4 text-light">
+                                    <td colspan="<?= $esHoy ? 7 : 6 ?>" class="text-center py-4 text-muted">
                                         <i class="bi bi-inbox"></i> No hay movimientos para esta fecha
                                     </td>
                                 </tr>
