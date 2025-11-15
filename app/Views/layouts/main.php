@@ -139,7 +139,7 @@
 
   <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
     <div class="container">
-      <a class="navbar-brand" href="<?= site_url('/') ?>">
+      <a class="navbar-brand" href="<?= site_url('/') ?>" id="logo-link">
         <img src="<?= base_url('assets/images/logo.png') ?>" alt="Logo La Bartola">
         La Bartola
       </a>
@@ -154,10 +154,6 @@
             <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/pedidos') ?>">Pedidos</a></li>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/inventario') ?>">📦 Inventario</a></li>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/caja-chica') ?>">💰 Caja Chica</a></li>
-            <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/caja') ?>">Caja</a></li>
-            <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/stock') ?>">Stock</a></li>
-            <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/cupones') ?>">Cupones</a></li>
-            <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/analytics') ?>">Analytics</a></li>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('usuario') ?>">Usuarios</a></li>
             <li class="nav-item"><a class="nav-link" href="<?= site_url('logout') ?>">Logout</a></li>
           <?php elseif (auth()->loggedIn() && auth()->user()->inGroup('vendedor')) : ?>
@@ -413,6 +409,33 @@
       }
     });
     FIN DEL BLOQUE COMENTADO */
+    <?php endif; ?>
+
+    // Script para 5 clicks en el logo redirige a caja chica (solo para admin)
+    <?php if (auth()->loggedIn() && auth()->user()->inGroup('admin')) : ?>
+    (function() {
+      let clickCount = 0;
+      let clickTimer = null;
+      const logoLink = document.getElementById('logo-link');
+
+      if (logoLink) {
+        logoLink.addEventListener('click', function(e) {
+          clickCount++;
+
+          if (clickCount === 5) {
+            e.preventDefault();
+            window.location.href = '<?= site_url('admin/caja-chica') ?>';
+            clickCount = 0;
+            clearTimeout(clickTimer);
+          } else {
+            clearTimeout(clickTimer);
+            clickTimer = setTimeout(function() {
+              clickCount = 0;
+            }, 2000);
+          }
+        });
+      }
+    })();
     <?php endif; ?>
   </script>
 </body>
