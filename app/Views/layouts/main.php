@@ -411,8 +411,7 @@
     FIN DEL BLOQUE COMENTADO */
     <?php endif; ?>
 
-    // Script para 5 clicks en el logo redirige a caja chica (solo para admin)
-    <?php if (auth()->loggedIn() && auth()->user()->inGroup('admin')) : ?>
+    // Script para 5 clicks en el logo redirige a caja chica
     (function() {
       let clickCount = 0;
       let clickTimer = null;
@@ -420,23 +419,26 @@
 
       if (logoLink) {
         logoLink.addEventListener('click', function(e) {
+          e.preventDefault();
           clickCount++;
 
-          if (clickCount === 5) {
-            e.preventDefault();
+          if (clickCount >= 5) {
             window.location.href = '<?= site_url('admin/caja-chica') ?>';
             clickCount = 0;
             clearTimeout(clickTimer);
-          } else {
-            clearTimeout(clickTimer);
-            clickTimer = setTimeout(function() {
-              clickCount = 0;
-            }, 2000);
+            return false;
           }
+
+          clearTimeout(clickTimer);
+          clickTimer = setTimeout(function() {
+            if (clickCount < 5) {
+              window.location.href = logoLink.href;
+            }
+            clickCount = 0;
+          }, 800);
         });
       }
     })();
-    <?php endif; ?>
   </script>
 </body>
 </html>
