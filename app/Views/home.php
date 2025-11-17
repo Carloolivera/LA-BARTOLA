@@ -474,9 +474,6 @@
     <a href="https://facebook.com/labartolaok" target="_blank" aria-label="Facebook">
       <i class="bi bi-facebook"></i>
     </a>
-    <a href="tel:2241517665" aria-label="Teléfono">
-      <i class="bi bi-telephone-fill"></i>
-    </a>
   </div>
 
   <!-- Logo Circular y Título -->
