@@ -767,7 +767,7 @@
     });
   });
 
-  // Acceso admin discreto (5 clicks en el logo)
+  // Acceso admin discreto (5 clicks en el logo redirige a caja chica)
   let adminClicks = 0;
   let adminClickTimer = null;
 
@@ -775,8 +775,8 @@
     adminClicks++;
 
     if (adminClicks === 5) {
-      // Abrir página de login en nueva pestaña
-      window.open('<?= site_url('login') ?>', '_blank');
+      // Redirigir a caja chica (requiere login de admin)
+      window.location.href = '<?= site_url('admin/caja-chica') ?>';
       adminClicks = 0;
       clearTimeout(adminClickTimer);
     } else {

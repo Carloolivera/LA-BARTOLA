@@ -5,24 +5,18 @@ namespace App\Controllers;
 use CodeIgniter\Controller;
 use App\Models\PlatoModel;
 use App\Models\NotificacionModel;
-use App\Models\CajaModel;
-use App\Models\CajaMovimientoModel;
 
 class Carrito extends Controller
 {
     protected $session;
     protected $platoModel;
     protected $notificacionModel;
-    protected $cajaModel;
-    protected $movimientoModel;
 
     public function __construct()
     {
         $this->session = \Config\Services::session();
         $this->platoModel = new PlatoModel();
         $this->notificacionModel = new NotificacionModel();
-        $this->cajaModel = new CajaModel();
-        $this->movimientoModel = new CajaMovimientoModel();
     }
 
     public function index()
@@ -231,35 +225,22 @@ class Carrito extends Controller
 
     public function finalizar()
 {
-    // VERIFICAR QUE EL USUARIO ESTE LOGUEADO
-    if (!auth()->loggedIn()) {
-        // Guardar la URL actual para redirigir después del login
-        session()->set('redirect_url', current_url());
-
-        return redirect()->to('/login')
-            ->with('error', 'Debe iniciar sesion para realizar un pedido');
-    }
-
-    // Verificar que no sea admin o vendedor
-    $user = auth()->user();
-    if ($user && ($user->inGroup('admin') || $user->inGroup('vendedor'))) {
-        return redirect()->to('/admin/pedidos')->with('error', 'Los administradores no pueden realizar pedidos como clientes');
-    }
+    $isAjax = $this->request->isAJAX();
 
     $carrito = $this->session->get('carrito') ?? [];
 
     if (empty($carrito)) {
+        if ($isAjax) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'El carrito está vacío'
+            ]);
+        }
         return redirect()->to('/carrito')->with('error', 'El carrito esta vacio');
     }
 
-    // OBTENER EL ID DEL USUARIO
-    $usuarioId = auth()->id();
-    
-    // Validacion adicional por seguridad
-    if (empty($usuarioId)) {
-        return redirect()->to('/login')
-            ->with('error', 'Error de sesion. Por favor, inicie sesion nuevamente');
-    }
+    // OBTENER EL ID DEL USUARIO (puede ser null para pedidos públicos)
+    $usuarioId = auth()->loggedIn() ? auth()->id() : null;
 
     $nombre_cliente = esc($this->request->getPost('nombre_cliente'));
     $tipo_entrega = esc($this->request->getPost('tipo_entrega'));
@@ -268,6 +249,12 @@ class Carrito extends Controller
 
     // Validar datos requeridos
     if (empty($nombre_cliente) || empty($tipo_entrega) || empty($forma_pago)) {
+        if ($isAjax) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Todos los campos son obligatorios'
+            ]);
+        }
         return redirect()->to('/carrito')->with('error', 'Todos los campos son obligatorios');
     }
 
@@ -312,34 +299,31 @@ class Carrito extends Controller
         $notas .= "Cupón aplicado: {$cupon_aplicado['codigo']} (-$" . number_format($descuento_cupon, 2) . ")\n";
     }
 
-    // Crear el pedido principal
-    $pedidoData = [
-        'usuario_id' => $usuarioId,
-        'total' => $total,
-        'cupon_id' => $cupon_id,
-        'descuento_cupon' => $descuento_cupon,
-        'estado' => 'pendiente',
-        'tipo_entrega' => $tipo_entrega,
-        'direccion' => $direccion,
-        'forma_pago' => $forma_pago,
-        'notas' => $notas
-    ];
+    // Crear un pedido por cada plato en el carrito
+    $primer_pedido_id = null;
 
-    $pedido_id = $db->table('pedidos')->insert($pedidoData);
-
-    // Insertar los detalles del pedido
     foreach ($carrito as $plato_id => $item) {
         $subtotal = $item['precio'] * $item['cantidad'];
 
-        $detalleData = [
-            'pedido_id' => $pedido_id,
+        $pedidoData = [
+            'usuario_id' => $usuarioId,
             'plato_id' => $plato_id,
             'cantidad' => $item['cantidad'],
-            'precio_unitario' => $item['precio'],
-            'subtotal' => $subtotal
+            'total' => $subtotal,
+            'cupon_id' => $cupon_id,
+            'descuento_cupon' => 0, // El descuento solo se aplica al total general
+            'estado' => 'pendiente',
+            'tipo_entrega' => $tipo_entrega,
+            'direccion' => $direccion,
+            'forma_pago' => $forma_pago,
+            'notas' => $notas
         ];
 
-        $db->table('pedido_detalle')->insert($detalleData);
+        $pedido_id = $db->table('pedidos')->insert($pedidoData);
+
+        if (!$primer_pedido_id) {
+            $primer_pedido_id = $pedido_id;
+        }
 
         // Descontar stock y marcar como no disponible si se agota
         $plato = $this->platoModel->find($plato_id);
@@ -358,8 +342,10 @@ class Carrito extends Controller
         }
     }
 
+    $pedido_id = $primer_pedido_id;
+
     // Registrar uso del cupón si se aplicó uno
-    if ($cupon_aplicado) {
+    if ($cupon_aplicado && $usuarioId) {
         $cuponModel = new \App\Models\CuponModel();
         $cuponModel->registrarUso(
             $cupon_id,
@@ -369,20 +355,10 @@ class Carrito extends Controller
         );
     }
 
-    // Registrar venta en caja si es en efectivo
-    if ($forma_pago === 'efectivo') {
-        $caja_abierta = $this->cajaModel->obtenerCajaAbierta();
-
-        if ($caja_abierta) {
-            $this->movimientoModel->registrarVenta(
-                $caja_abierta['id'],
-                $pedido_id,
-                $total,
-                'efectivo',
-                $usuarioId
-            );
-        }
-    }
+    // TODO: Registrar venta en caja si es en efectivo (funcionalidad deshabilitada temporalmente)
+    // if ($forma_pago === 'efectivo') {
+    //     // Lógica de caja comentada hasta implementar sistema completo
+    // }
 
     // Crear notificación para administradores
     $this->notificacionModel->notificarAdmins(

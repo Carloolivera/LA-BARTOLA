@@ -5,9 +5,13 @@
 <?= $this->section('main') ?>
 
 <style>
+    body {
+        background-color: #000 !important;
+    }
+
     .login-container {
         min-height: 100vh;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background-color: #000;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -15,17 +19,18 @@
     }
 
     .login-card {
-        background: white;
+        background-color: #1a1a1a;
+        border: 2px solid #D4B68A;
         border-radius: 20px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 20px 60px rgba(212, 182, 138, 0.3);
         overflow: hidden;
         max-width: 450px;
         width: 100%;
     }
 
     .login-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+        background-color: #D4B68A;
+        color: #000;
         padding: 2.5rem 2rem;
         text-align: center;
     }
@@ -38,7 +43,7 @@
 
     .login-header p {
         margin: 0.5rem 0 0 0;
-        opacity: 0.9;
+        opacity: 0.8;
         font-size: 0.95rem;
     }
 
@@ -47,47 +52,63 @@
     }
 
     .form-floating > .form-control {
+        background-color: #2a2a2a;
+        border: 2px solid #D4B68A;
         border-radius: 10px;
-        border: 2px solid #e0e0e0;
         padding: 1rem 0.75rem;
+        color: #f5f5dc;
     }
 
     .form-floating > .form-control:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        border-color: #D4B68A;
+        box-shadow: 0 0 0 0.2rem rgba(212, 182, 138, 0.25);
+        background-color: #2a2a2a;
+        color: #f5f5dc;
+    }
+
+    .form-floating > label {
+        color: #D4B68A;
+    }
+
+    .form-floating > .form-control:focus ~ label,
+    .form-floating > .form-control:not(:placeholder-shown) ~ label {
+        color: #D4B68A;
     }
 
     .btn-login {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background-color: #D4B68A;
         border: none;
         border-radius: 10px;
         padding: 0.875rem;
         font-weight: 600;
         font-size: 1.05rem;
+        color: #000;
         transition: transform 0.2s, box-shadow 0.2s;
     }
 
     .btn-login:hover {
+        background-color: #c9a770;
+        color: #000;
         transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 10px 20px rgba(212, 182, 138, 0.3);
     }
 
     .btn-google {
-        border: 2px solid #e0e0e0;
+        border: 2px solid #D4B68A;
         border-radius: 10px;
         padding: 0.875rem;
         font-weight: 600;
         transition: all 0.2s;
-        background: white;
-        color: #333;
+        background: #2a2a2a;
+        color: #D4B68A;
     }
 
     .btn-google:hover {
-        border-color: #DB4437;
-        background: #DB4437;
-        color: white;
+        border-color: #D4B68A;
+        background: #D4B68A;
+        color: #000;
         transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(219, 68, 55, 0.2);
+        box-shadow: 0 10px 20px rgba(212, 182, 138, 0.2);
     }
 
     .divider {
@@ -101,36 +122,53 @@
     .divider::after {
         content: '';
         flex: 1;
-        border-bottom: 1px solid #e0e0e0;
+        border-bottom: 1px solid #D4B68A;
     }
 
     .divider span {
         padding: 0 1rem;
-        color: #999;
+        color: #D4B68A;
         font-size: 0.9rem;
     }
 
+    .form-check-input {
+        background-color: #2a2a2a;
+        border-color: #D4B68A;
+    }
+
     .form-check-input:checked {
-        background-color: #667eea;
-        border-color: #667eea;
+        background-color: #D4B68A;
+        border-color: #D4B68A;
+    }
+
+    .form-check-label {
+        color: #f5f5dc;
     }
 
     .login-footer {
         margin-top: 1.5rem;
         padding-top: 1.5rem;
-        border-top: 1px solid #e0e0e0;
+        border-top: 1px solid #D4B68A;
         text-align: center;
     }
 
     .login-footer a {
-        color: #667eea;
+        color: #D4B68A;
         text-decoration: none;
         font-weight: 600;
     }
 
     .login-footer a:hover {
-        color: #764ba2;
+        color: #c9a770;
         text-decoration: underline;
+    }
+
+    .login-footer p {
+        color: #f5f5dc;
+    }
+
+    .alert {
+        border-radius: 10px;
     }
 </style>
 

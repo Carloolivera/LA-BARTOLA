@@ -26,6 +26,7 @@ class Filters extends BaseFilters
         'pagecache'         => PageCache::class,
         'performance'       => PerformanceMetrics::class,
         'auth'              => \CodeIgniter\Shield\Filters\SessionAuth::class,
+        'authAjax'          => \App\Filters\AuthAjaxFilter::class,
         'permission'        => \CodeIgniter\Shield\Filters\PermissionFilter::class,
         'group'             => \CodeIgniter\Shield\Filters\GroupFilter::class,
         'adminOrVendedor'   => \App\Filters\AdminOrVendedorFilter::class,
