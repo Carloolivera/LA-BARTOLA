@@ -94,6 +94,8 @@ class Menu extends BaseController
 
         try {
             $this->platoModel->insert($data);
+            // Limpiar caché de platos
+            cache()->delete('platos_disponibles');
             return redirect()->to('/admin/menu')->with('success', 'Plato agregado correctamente');
         } catch (DataException $e) {
             return redirect()->back()->withInput()->with('error', 'Error al guardar: ' . $e->getMessage());
@@ -162,6 +164,8 @@ class Menu extends BaseController
 
         try {
             $this->platoModel->update($id, $data);
+            // Limpiar caché de platos
+            cache()->delete('platos_disponibles');
             return redirect()->to('/admin/menu')->with('success', 'Plato actualizado correctamente');
         } catch (DataException $e) {
             return redirect()->back()->withInput()->with('error', 'Error al actualizar: ' . $e->getMessage());
@@ -186,6 +190,23 @@ class Menu extends BaseController
         }
 
         $this->platoModel->delete($id);
+        // Limpiar caché de platos
+        cache()->delete('platos_disponibles');
         return redirect()->to('/admin/menu')->with('success', 'Plato eliminado correctamente');
+    }
+
+    public function obtenerPlatos()
+    {
+        $platos = $this->platoModel
+            ->select('id, nombre, precio, categoria, disponible, stock, stock_ilimitado')
+            ->where('disponible', 1)
+            ->orderBy('categoria', 'ASC')
+            ->orderBy('nombre', 'ASC')
+            ->findAll();
+
+        return $this->response->setJSON([
+            'success' => true,
+            'platos' => $platos
+        ]);
     }
 }

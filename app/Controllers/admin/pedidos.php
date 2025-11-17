@@ -187,12 +187,220 @@ class Pedidos extends BaseController
     {
         // Verificar que sea admin
         if (!auth()->user()->inGroup('admin')) {
-            return redirect()->to('/')->with('error', 'Acceso denegado');
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Acceso denegado'
+            ]);
         }
 
         $this->db->table('pedidos')->where('id', $id)->delete();
 
-        return redirect()->to('/admin/pedidos')->with('success', 'Pedido eliminado correctamente');
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Pedido eliminado correctamente'
+        ]);
+    }
+
+    public function actualizarItem()
+    {
+        // Verificar que sea admin
+        if (!auth()->user()->inGroup('admin')) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Acceso denegado'
+            ]);
+        }
+
+        $itemId = $this->request->getPost('item_id');
+        $cantidad = (int)$this->request->getPost('cantidad');
+
+        if (!$itemId || $cantidad < 0) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Datos inválidos'
+            ]);
+        }
+
+        // Obtener el pedido actual
+        $pedido = $this->db->table('pedidos')->where('id', $itemId)->get()->getRowArray();
+
+        if (!$pedido) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Pedido no encontrado'
+            ]);
+        }
+
+        // Si la cantidad es 0, eliminar el pedido
+        if ($cantidad === 0) {
+            $this->db->table('pedidos')->where('id', $itemId)->delete();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Item eliminado',
+                'subtotal' => 0,
+                'cantidad' => 0
+            ]);
+        }
+
+        // Obtener información del plato para verificar stock
+        $plato = $this->db->table('platos')->where('id', $pedido['plato_id'])->get()->getRowArray();
+
+        if (!$plato) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Plato no encontrado'
+            ]);
+        }
+
+        // Verificar stock (solo si no es ilimitado)
+        if ($plato['stock_ilimitado'] == 0) {
+            if ($cantidad > $plato['stock']) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => "Stock insuficiente. Disponible: {$plato['stock']} unidad(es)"
+                ]);
+            }
+        }
+
+        // Calcular nuevo subtotal
+        $nuevoTotal = $plato['precio'] * $cantidad;
+
+        // Actualizar pedido
+        $this->db->table('pedidos')
+            ->where('id', $itemId)
+            ->update([
+                'cantidad' => $cantidad,
+                'total' => $nuevoTotal
+            ]);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Cantidad actualizada',
+            'subtotal' => $nuevoTotal,
+            'cantidad' => $cantidad
+        ]);
+    }
+
+    public function agregarPlato()
+    {
+        // Verificar que sea admin
+        if (!auth()->user()->inGroup('admin')) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Acceso denegado'
+            ]);
+        }
+
+        $pedidoKey = $this->request->getPost('pedido_key');
+        $platoId = $this->request->getPost('plato_id');
+        $cantidad = (int)$this->request->getPost('cantidad');
+
+        if (!$pedidoKey || !$platoId || $cantidad < 1) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Datos incompletos'
+            ]);
+        }
+
+        // Obtener información del plato
+        $plato = $this->db->table('platos')->where('id', $platoId)->get()->getRowArray();
+
+        if (!$plato) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Plato no encontrado'
+            ]);
+        }
+
+        // Verificar stock (solo si no es ilimitado)
+        if ($plato['stock_ilimitado'] == 0) {
+            if ($cantidad > $plato['stock']) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => "Stock insuficiente. Disponible: {$plato['stock']} unidad(es)"
+                ]);
+            }
+        }
+
+        // Obtener un pedido existente del mismo grupo para copiar datos
+        // El key tiene formato: nombreCliente_fecha (ej: "Juan Perez_2025-01-17 14:30")
+        $keyParts = explode('_', $pedidoKey, 2); // Limitar a 2 partes para no romper la fecha
+        $nombreCliente = $keyParts[0];
+        $fechaPedido = isset($keyParts[1]) ? $keyParts[1] : null;
+
+        // Buscar un pedido existente de este cliente/grupo con la misma fecha
+        $query = $this->db->table('pedidos')
+            ->like('notas', "A nombre de: {$nombreCliente}")
+            ->orderBy('id', 'DESC');
+
+        // Si tenemos la fecha, filtrar también por fecha para mayor precisión
+        if ($fechaPedido) {
+            $fechaFormateada = date('Y-m-d H:i', strtotime($fechaPedido));
+            $query->where('DATE_FORMAT(created_at, "%Y-%m-%d %H:%i") =', $fechaFormateada);
+        }
+
+        $pedidoExistente = $query->get()->getRowArray();
+
+        if (!$pedidoExistente) {
+            // Si no encontramos con fecha exacta, buscar solo por nombre
+            $pedidoExistente = $this->db->table('pedidos')
+                ->like('notas', "A nombre de: {$nombreCliente}")
+                ->orderBy('id', 'DESC')
+                ->get()
+                ->getRowArray();
+        }
+
+        if (!$pedidoExistente) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No se pudo encontrar el pedido original'
+            ]);
+        }
+
+        // Verificar si ya existe este plato en el mismo pedido (mismo cliente, fecha y plato)
+        $platoYaExiste = $this->db->table('pedidos')
+            ->where('plato_id', $platoId)
+            ->like('notas', "A nombre de: {$nombreCliente}")
+            ->where('created_at', $pedidoExistente['created_at'])
+            ->get()
+            ->getRowArray();
+
+        if ($platoYaExiste) {
+            // Si ya existe, actualizar la cantidad en lugar de crear un nuevo registro
+            $nuevaCantidad = $platoYaExiste['cantidad'] + $cantidad;
+            $nuevoTotal = $plato['precio'] * $nuevaCantidad;
+
+            $this->db->table('pedidos')
+                ->where('id', $platoYaExiste['id'])
+                ->update([
+                    'cantidad' => $nuevaCantidad,
+                    'total' => $nuevoTotal
+                ]);
+        } else {
+            // Crear nuevo registro en pedidos con los mismos datos del grupo
+            $subtotal = $plato['precio'] * $cantidad;
+
+            $nuevoPedido = [
+                'usuario_id' => $pedidoExistente['usuario_id'],
+                'plato_id' => $platoId,
+                'cantidad' => $cantidad,
+                'total' => $subtotal,
+                'estado' => $pedidoExistente['estado'],
+                'tipo_entrega' => $pedidoExistente['tipo_entrega'],
+                'direccion' => $pedidoExistente['direccion'],
+                'forma_pago' => $pedidoExistente['forma_pago'],
+                'notas' => $pedidoExistente['notas'],
+                'created_at' => $pedidoExistente['created_at'] // Usar la misma fecha del grupo
+            ];
+
+            $this->db->table('pedidos')->insert($nuevoPedido);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Plato agregado al pedido'
+        ]);
     }
 
     public function imprimirTicket($id)

@@ -5,9 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Mi Carrito - La Bartola</title>
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Preconnect para acelerar carga -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- CSS con preload -->
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+
+  <!-- Fallback -->
+  <noscript>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  </noscript>
 
   <style>
     * {
@@ -945,7 +958,7 @@
     const comentarios = document.getElementById('comentarios').value.trim();
 
     if (!nombre || !domicilio) {
-      alert('Por favor completa tu nombre y domicilio');
+      showNotification('Por favor completa tu nombre y domicilio', 'warning');
       return;
     }
 
@@ -999,7 +1012,7 @@
 
       if (!data.success) {
         hideLoading();
-        alert(data.message || 'Error al guardar el pedido');
+        showNotification(data.message || 'Error al guardar el pedido', 'error');
         return;
       }
 
@@ -1041,19 +1054,19 @@
       window.open(urlWhatsApp, '_blank');
 
       // Mostrar mensaje de éxito y redirigir
-      alert('¡Pedido confirmado! Se abrió WhatsApp para enviar el mensaje.');
+      showNotification('¡Pedido confirmado! Abriendo WhatsApp...', 'success');
 
       setTimeout(() => {
         closeOrderModal();
-        // Redirigir al historial de pedidos
-        window.location.href = '<?= site_url('pedido') ?>';
-      }, 1000);
+        // Redirigir al menú público
+        window.location.href = '<?= site_url('/') ?>';
+      }, 2000);
 
     } catch (error) {
       hideLoading();
       console.error('Error completo:', error);
       console.error('Mensaje:', error.message);
-      alert('Error al procesar el pedido: ' + error.message + '\n\nPor favor intenta nuevamente o contacta al soporte.');
+      showNotification('Error al procesar el pedido. Por favor intenta nuevamente.', 'error');
     }
   }
 

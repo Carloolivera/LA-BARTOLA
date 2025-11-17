@@ -86,7 +86,7 @@
                         <tbody>
                             <?php if (empty($items)): ?>
                                 <tr>
-                                    <td colspan="7" class="text-center py-4 text-muted">
+                                    <td colspan="7" class="text-center py-4 text-light" style="opacity: 0.7;">
                                         <i class="bi bi-inbox"></i> No hay items en el inventario
                                     </td>
                                 </tr>
@@ -108,7 +108,7 @@
                                                 <?= number_format($item['cantidad_actual'], 2) ?> <?= esc($item['unidad_medida']) ?>
                                             </span>
                                             <?php if (isset($item['cantidad_minima'])): ?>
-                                                <br><small class="text-muted">Min: <?= $item['cantidad_minima'] ?></small>
+                                                <br><small class="text-light" style="opacity: 0.7;">Min: <?= $item['cantidad_minima'] ?></small>
                                             <?php endif; ?>
                                         </td>
                                         <td class="d-none d-lg-table-cell text-light small"><?= esc($item['ubicacion'] ?: '-') ?></td>

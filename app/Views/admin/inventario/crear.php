@@ -76,7 +76,7 @@
                             <label for="cantidad_minima" class="form-label">Cantidad Mínima (Alerta)</label>
                             <input type="number" class="form-control" id="cantidad_minima" name="cantidad_minima"
                                    step="0.01" min="0" value="<?= old('cantidad_minima') ?>">
-                            <small class="text-muted">Se alertará cuando el stock llegue a este nivel</small>
+                            <small class="text-light" style="opacity: 0.7;">Se alertará cuando el stock llegue a este nivel</small>
                         </div>
 
                         <div class="col-md-6">
