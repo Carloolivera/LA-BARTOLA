@@ -21,35 +21,14 @@ class Carrito extends Controller
 
     public function index()
     {
-        // Verificar que el usuario logueado no sea admin o vendedor
-        if (auth()->loggedIn()) {
-            $user = auth()->user();
-            if ($user && ($user->inGroup('admin') || $user->inGroup('vendedor'))) {
-                return redirect()->to('/admin/pedidos')->with('error', 'Los administradores deben usar el panel de administración para gestionar pedidos');
-            }
-        }
-
         $carrito = $this->session->get('carrito') ?? [];
-
         $data['carrito'] = $carrito;
-
         return view('carrito/index', $data);
     }
 
     public function agregar()
     {
         try {
-            // Verificar que el usuario logueado no sea admin o vendedor
-            if (auth()->loggedIn()) {
-                $user = auth()->user();
-                if ($user && ($user->inGroup('admin') || $user->inGroup('vendedor'))) {
-                    return $this->response->setJSON([
-                        'success' => false,
-                        'message' => 'Los administradores y vendedores no pueden realizar pedidos como clientes. Use el panel de administración.'
-                    ]);
-                }
-            }
-
             $plato_id = $this->request->getPost('plato_id');
             $cantidad = (int)$this->request->getPost('cantidad');
 
@@ -239,8 +218,8 @@ class Carrito extends Controller
         return redirect()->to('/carrito')->with('error', 'El carrito esta vacio');
     }
 
-    // OBTENER EL ID DEL USUARIO (puede ser null para pedidos públicos)
-    $usuarioId = auth()->loggedIn() ? auth()->id() : null;
+    // Los pedidos públicos no tienen usuario asociado
+    $usuarioId = null;
 
     $nombre_cliente = esc($this->request->getPost('nombre_cliente'));
     $tipo_entrega = esc($this->request->getPost('tipo_entrega'));
@@ -277,17 +256,6 @@ class Carrito extends Controller
         $total += $subtotal;
     }
 
-    // Verificar si hay cupón aplicado
-    $cupon_aplicado = $this->session->get('cupon_aplicado');
-    $cupon_id = null;
-    $descuento_cupon = 0;
-
-    if ($cupon_aplicado) {
-        $cupon_id = $cupon_aplicado['cupon']['id'];
-        $descuento_cupon = $cupon_aplicado['descuento'];
-        $total -= $descuento_cupon; // Aplicar descuento al total
-    }
-
     // Construir notas del pedido
     $notas = "A nombre de: {$nombre_cliente}\n";
     $notas .= "Tipo de entrega: {$tipo_entrega}\n";
@@ -295,9 +263,6 @@ class Carrito extends Controller
         $notas .= "Direccion: {$direccion}\n";
     }
     $notas .= "Forma de pago: {$forma_pago}\n";
-    if ($cupon_aplicado) {
-        $notas .= "Cupón aplicado: {$cupon_aplicado['codigo']} (-$" . number_format($descuento_cupon, 2) . ")\n";
-    }
 
     // Crear un pedido por cada plato en el carrito
     $primer_pedido_id = null;
@@ -306,12 +271,10 @@ class Carrito extends Controller
         $subtotal = $item['precio'] * $item['cantidad'];
 
         $pedidoData = [
-            'usuario_id' => $usuarioId,
+            'usuario_id' => null,
             'plato_id' => $plato_id,
             'cantidad' => $item['cantidad'],
             'total' => $subtotal,
-            'cupon_id' => $cupon_id,
-            'descuento_cupon' => 0, // El descuento solo se aplica al total general
             'estado' => 'pendiente',
             'tipo_entrega' => $tipo_entrega,
             'direccion' => $direccion,
@@ -339,45 +302,37 @@ class Carrito extends Controller
             }
 
             $this->platoModel->update($plato_id, $updateData);
+
+            // Limpiar caché de platos cuando cambia el stock
+            cache()->delete('platos_disponibles');
         }
     }
 
     $pedido_id = $primer_pedido_id;
-
-    // Registrar uso del cupón si se aplicó uno
-    if ($cupon_aplicado && $usuarioId) {
-        $cuponModel = new \App\Models\CuponModel();
-        $cuponModel->registrarUso(
-            $cupon_id,
-            $usuarioId,
-            $descuento_cupon,
-            $pedido_id
-        );
-    }
 
     // TODO: Registrar venta en caja si es en efectivo (funcionalidad deshabilitada temporalmente)
     // if ($forma_pago === 'efectivo') {
     //     // Lógica de caja comentada hasta implementar sistema completo
     // }
 
-    // Crear notificación para administradores
-    $this->notificacionModel->notificarAdmins(
-        'nuevo_pedido',
-        'Nuevo Pedido Recibido',
-        "Pedido #{$pedido_id} de {$nombre_cliente} por $" . number_format($total, 2),
-        'bi-bag-check-fill',
-        site_url("admin/pedidos/ver/{$pedido_id}"),
-        [
-            'pedido_id' => $pedido_id,
-            'total' => $total,
-            'tipo_entrega' => $tipo_entrega,
-            'forma_pago' => $forma_pago
-        ]
-    );
+    // TODO: Crear notificación para administradores (funcionalidad deshabilitada temporalmente)
+    // El método notificarAdmins() no existe en NotificacionModel
+    // $this->notificacionModel->notificarAdmins(
+    //     'nuevo_pedido',
+    //     'Nuevo Pedido Recibido',
+    //     "Pedido #{$pedido_id} de {$nombre_cliente} por $" . number_format($total, 2),
+    //     'bi-bag-check-fill',
+    //     site_url("admin/pedidos/ver/{$pedido_id}"),
+    //     [
+    //         'pedido_id' => $pedido_id,
+    //         'total' => $total,
+    //         'tipo_entrega' => $tipo_entrega,
+    //         'forma_pago' => $forma_pago
+    //     ]
+    // );
 
-    // Limpiar carrito y cupón de la sesión
+    // Limpiar carrito de la sesión
     $this->session->remove('carrito');
-    $this->session->remove('cupon_aplicado');
 
     // Si es una petición AJAX, devolver JSON
     if ($this->request->isAJAX() || $forma_pago === 'qr') {
@@ -402,101 +357,5 @@ class Carrito extends Controller
         $cart_count = array_sum(array_column($carrito, 'cantidad'));
 
         return $this->response->setJSON(['cart_count' => $cart_count]);
-    }
-
-    /**
-     * Validar cupón
-     */
-    public function validarCupon()
-    {
-        $codigo = esc($this->request->getPost('codigo'));
-
-        if (empty($codigo)) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Ingrese un código de cupón'
-            ]);
-        }
-
-        // Calcular total del carrito
-        $carrito = $this->session->get('carrito') ?? [];
-        $total = 0;
-
-        foreach ($carrito as $item) {
-            $total += $item['precio'] * $item['cantidad'];
-        }
-
-        // Validar cupón
-        $cuponModel = model('App\Models\CuponModel');
-        $resultado = $cuponModel->validarCupon($codigo, auth()->id(), $total);
-
-        return $this->response->setJSON([
-            'success' => $resultado['valido'],
-            'message' => $resultado['mensaje'],
-            'descuento' => $resultado['descuento'] ?? 0,
-            'cupon_id' => $resultado['cupon']['id'] ?? null
-        ]);
-    }
-
-    /**
-     * Aplicar cupón
-     */
-    public function aplicarCupon()
-    {
-        $codigo = esc($this->request->getPost('codigo'));
-
-        if (empty($codigo)) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Ingrese un código de cupón'
-            ]);
-        }
-
-        // Calcular total del carrito
-        $carrito = $this->session->get('carrito') ?? [];
-        $total = 0;
-
-        foreach ($carrito as $item) {
-            $total += $item['precio'] * $item['cantidad'];
-        }
-
-        // Validar cupón
-        $cuponModel = model('App\Models\CuponModel');
-        $resultado = $cuponModel->validarCupon($codigo, auth()->id(), $total);
-
-        if (!$resultado['valido']) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => $resultado['mensaje']
-            ]);
-        }
-
-        // Guardar cupón en sesión
-        $this->session->set('cupon_aplicado', [
-            'id' => $resultado['cupon']['id'],
-            'codigo' => $codigo,
-            'descuento' => $resultado['descuento']
-        ]);
-
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => $resultado['mensaje'],
-            'descuento' => $resultado['descuento'],
-            'total' => $total,
-            'total_con_descuento' => $total - $resultado['descuento']
-        ]);
-    }
-
-    /**
-     * Quitar cupón
-     */
-    public function quitarCupon()
-    {
-        $this->session->remove('cupon_aplicado');
-
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => 'Cupón removido'
-        ]);
     }
 }

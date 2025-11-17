@@ -253,10 +253,6 @@
                         <?php if (setting('Auth.allowMagicLinkLogins')) : ?>
                             <p class="mb-2"><?= lang('Auth.forgotPassword') ?> <a href="<?= url_to('magic-link') ?>"><?= lang('Auth.useMagicLink') ?></a></p>
                         <?php endif ?>
-
-                        <?php if (setting('Auth.allowRegistration')) : ?>
-                            <p class="mb-0"><?= lang('Auth.needAccount') ?> <a href="<?= url_to('register') ?>">Crear cuenta</a></p>
-                        <?php endif ?>
                     </div>
 
                 </form>

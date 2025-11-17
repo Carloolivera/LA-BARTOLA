@@ -126,7 +126,7 @@
                             if (empty($movimientos)):
                             ?>
                                 <tr>
-                                    <td colspan="<?= $esHoy ? 7 : 6 ?>" class="text-center py-4 text-muted">
+                                    <td colspan="<?= $esHoy ? 7 : 6 ?>" class="text-center py-4 text-light" style="opacity: 0.7;">
                                         <i class="bi bi-inbox"></i> No hay movimientos para esta fecha
                                     </td>
                                 </tr>

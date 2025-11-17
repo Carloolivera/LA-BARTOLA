@@ -5,9 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>La Bartola - Delivery</title>
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Preconnect para acelerar carga de recursos externos -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- CSS crítico inline primero, luego externos con preload -->
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+
+  <!-- Fallback para navegadores sin JS -->
+  <noscript>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  </noscript>
 
   <style>
     * {
@@ -543,6 +556,7 @@
             <?php if (!empty($plato['imagen'])): ?>
               <img src="<?= base_url('assets/images/platos/' . $plato['imagen']) ?>"
                    alt="<?= esc($plato['nombre']) ?>"
+                   loading="lazy"
                    style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
             <?php else: ?>
               <i class="bi bi-image"></i>
@@ -702,7 +716,7 @@
       window.location.href = '<?= site_url('carrito') ?>';
     } catch (error) {
       console.error('Error al sincronizar carrito:', error);
-      alert('Error al procesar el carrito. Intenta nuevamente.');
+      // Simplemente recargar la página para que el usuario pueda intentar nuevamente
       cartFloat.style.opacity = '1';
       cartFloat.style.pointerEvents = 'auto';
     }

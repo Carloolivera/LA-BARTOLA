@@ -70,14 +70,14 @@
                             <label for="cantidad_actual" class="form-label">Cantidad Actual</label>
                             <input type="number" class="form-control bg-secondary text-light" id="cantidad_actual"
                                    value="<?= number_format($item['cantidad_actual'], 2) ?>" readonly>
-                            <small class="text-muted">Use "Registrar Movimiento" para cambiar la cantidad</small>
+                            <small class="text-light" style="opacity: 0.7;">Use "Registrar Movimiento" para cambiar la cantidad</small>
                         </div>
 
                         <div class="col-md-4">
                             <label for="cantidad_minima" class="form-label">Cantidad Mínima (Alerta)</label>
                             <input type="number" class="form-control" id="cantidad_minima" name="cantidad_minima"
                                    step="0.01" min="0" value="<?= $item['cantidad_minima'] ?>">
-                            <small class="text-muted">Se alertará cuando el stock llegue a este nivel</small>
+                            <small class="text-light" style="opacity: 0.7;">Se alertará cuando el stock llegue a este nivel</small>
                         </div>
 
                         <div class="col-md-6">

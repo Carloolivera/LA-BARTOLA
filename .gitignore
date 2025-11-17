@@ -64,6 +64,18 @@ Thumbs.db
 #-------------------------
 /public/uploads/
 *.sql
+!docker/mysql/init.sql
 *.sqlite
 *.db
 client_secret_*.json
+
+#-------------------------
+# Docker volumes
+#-------------------------
+db_data/
+
+#-------------------------
+# Imágenes subidas
+#-------------------------
+/public/assets/images/platos/*
+!/public/assets/images/platos/.gitkeep

@@ -19,17 +19,6 @@ $routes->get('carrito/getCount', 'Carrito::getCount');
 // ---------------- CARRITO (finalizar pedido SIN requerir login) ----------------
 $routes->post('carrito/finalizar', 'Carrito::finalizar');
 
-// ---------------- CARRITO (con login) ----------------
-$routes->group('carrito', ['filter' => 'auth'], function($routes) {
-    $routes->get('mostrarQR', 'Carrito::mostrarQR');
-});
-
-// ---------------- PEDIDOS ----------------
-$routes->group('pedido', ['filter' => 'auth'], function($routes) {
-    $routes->get('/', 'Pedido::index');
-    $routes->post('crear', 'Pedido::crear');
-});
-
 
 // ---------------- USUARIOS ----------------
 $routes->group('usuario', ['filter' => 'auth'], function($routes) {
@@ -49,6 +38,8 @@ $routes->group('admin', ['filter' => 'group:admin'], function($routes) {
     $routes->get('pedidos/ver/(:num)', 'Admin\Pedidos::ver/$1');
     $routes->match(['GET', 'POST'], 'pedidos/editar/(:num)', 'Admin\Pedidos::editar/$1');
     $routes->post('pedidos/cambiarEstado/(:num)', 'Admin\Pedidos::cambiarEstado/$1');
+    $routes->post('pedidos/actualizarItem', 'Admin\Pedidos::actualizarItem');
+    $routes->post('pedidos/agregarPlato', 'Admin\Pedidos::agregarPlato');
     $routes->post('pedidos/eliminar/(:num)', 'Admin\Pedidos::eliminar/$1');
     $routes->get('pedidos/imprimir/(:num)', 'Admin\Pedidos::imprimirTicket/$1');
 
@@ -81,6 +72,7 @@ $routes->group('admin/menu', ['filter' => 'adminOrVendedor'], function($routes) 
     $routes->get('editar/(:num)', 'Admin\Menu::editar/$1');
     $routes->post('actualizar/(:num)', 'Admin\Menu::actualizar/$1');
     $routes->get('eliminar/(:num)', 'Admin\Menu::eliminar/$1');
+    $routes->get('obtenerPlatos', 'Admin\Menu::obtenerPlatos');
 });
 
 // CRUD DE CATEGORÍAS (ADMIN o VENDEDOR)
@@ -94,20 +86,9 @@ $routes->group('admin/categorias', ['filter' => 'adminOrVendedor'], function($ro
 
 
 
-// ---------------- CONTACTO ----------------
-$routes->get('contacto', 'Contacto::index');
-$routes->post('contacto/enviar', 'Contacto::enviar');
-
-// ---------------- OAUTH GOOGLE ----------------
-$routes->get('oauth/google', 'OAuth::googleRedirect');
-$routes->get('oauth/google/callback', 'OAuth::googleCallback');
-
-
 // ---------------- AUTH SHIELD ----------------
 service('auth')->routes($routes, ['except' => ['login', 'register']]);
 
-// ---------------- LOGIN / REGISTER ----------------
+// ---------------- LOGIN ADMIN ----------------
 $routes->get('login', '\App\Controllers\Auth\LoginController::loginView');
 $routes->post('login', '\App\Controllers\Auth\LoginController::loginAction');
-$routes->get('register', '\App\Controllers\Auth\RegisterController::registerView');
-$routes->post('register', '\App\Controllers\Auth\RegisterController::registerAction');

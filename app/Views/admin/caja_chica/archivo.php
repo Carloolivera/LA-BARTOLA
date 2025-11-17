@@ -34,7 +34,7 @@
                         <tbody>
                             <?php if (empty($fechas)): ?>
                                 <tr>
-                                    <td colspan="3" class="text-center py-4 text-muted">
+                                    <td colspan="3" class="text-center py-4 text-light" style="opacity: 0.7;">
                                         <i class="bi bi-inbox"></i> No hay registros en el archivo
                                     </td>
                                 </tr>
@@ -49,7 +49,7 @@
                                         <td>
                                             <div class="d-flex flex-column">
                                                 <span class="fw-bold text-light"><?= date('d/m/Y', $timestamp) ?></span>
-                                                <small style="color: #999;"><?= $diaSemana ?></small>
+                                                <small style="color: #D4B68A;"><?= $diaSemana ?></small>
                                             </div>
                                         </td>
                                         <td class="text-center">

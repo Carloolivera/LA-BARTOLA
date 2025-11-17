@@ -43,7 +43,7 @@
                         <tbody id="tablaCategorias">
                             <?php if (empty($categorias)): ?>
                                 <tr>
-                                    <td colspan="6" class="text-center py-4 text-muted">
+                                    <td colspan="6" class="text-center py-4 text-light" style="opacity: 0.7;">
                                         <i class="bi bi-inbox"></i> No hay categorías registradas
                                     </td>
                                 </tr>
@@ -108,7 +108,7 @@
                     <div class="mb-3">
                         <label for="ordenNuevaCategoria" class="form-label">Orden (opcional)</label>
                         <input type="number" class="form-control" id="ordenNuevaCategoria" value="0" min="0">
-                        <small class="text-muted">Determina el orden de aparición en el menú</small>
+                        <small class="text-light" style="opacity: 0.7;">Determina el orden de aparición en el menú</small>
                     </div>
                 </form>
             </div>

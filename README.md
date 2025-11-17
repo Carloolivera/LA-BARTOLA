@@ -361,17 +361,138 @@ Formulario con CodeIgniter Shield:
 
 ## 📥 Instalación
 
-### Requisitos Previos
+### Opción A: Con Docker (Recomendado)
 
+Docker simplifica la instalación y garantiza un ambiente consistente.
+
+#### Requisitos Previos
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado
+- Git
+
+#### Pasos de Instalación
+
+1. **Clonar el repositorio**
 ```bash
-- PHP >= 8.1
-- Composer
-- MySQL/MariaDB
-- Apache/Nginx (o Docker)
-- Extensiones PHP: intl, mbstring, gd, mysqli, json
+git clone https://github.com/Carloolivera/labartola.git
+cd labartola
 ```
 
-### Pasos de Instalación
+2. **Configurar variables de entorno**
+```bash
+cp .env.example .env
+```
+
+El archivo `.env.example` ya viene configurado para Docker. Si necesitas cambiar algo, edita `.env`:
+```ini
+CI_ENVIRONMENT = development
+app.baseURL = 'http://localhost:8080/'
+
+# Database (configurado para Docker)
+database.default.hostname = mysql
+database.default.database = labartola
+database.default.username = root
+database.default.password = root_password_2024
+database.default.DBDriver = MySQLi
+database.default.port = 3306
+```
+
+3. **Levantar los contenedores**
+```bash
+docker-compose up -d
+```
+
+Esto iniciará 3 servicios:
+- **Web (CodeIgniter)**: http://localhost:8080
+- **MySQL 8.0**: Puerto 3307 (host) / 3306 (contenedor)
+- **phpMyAdmin**: http://localhost:8088
+
+4. **Esperar a que MySQL esté listo**
+```bash
+# Verificar que los contenedores estén corriendo
+docker-compose ps
+
+# Ver logs de MySQL para confirmar que está listo
+docker-compose logs mysql
+```
+
+5. **Ejecutar migraciones dentro del contenedor**
+```bash
+# Entrar al contenedor web
+docker-compose exec web bash
+
+# Ejecutar migraciones
+php spark migrate --all
+php spark shield:setup
+
+# Salir del contenedor
+exit
+```
+
+6. **Crear usuario admin inicial**
+```bash
+# Entrar al contenedor nuevamente
+docker-compose exec web bash
+
+# Crear usuario
+php spark shield:user create
+# Email: admin@labartola.com
+# Username: admin
+# Password: [tu_password_seguro]
+
+# Asignar grupo admin
+php spark shield:group add admin admin
+
+# Salir
+exit
+```
+
+7. **Acceder al sistema**
+```
+🌐 Aplicación: http://localhost:8080
+🗄️ phpMyAdmin: http://localhost:8088
+   - Usuario: root
+   - Contraseña: root_password_2024
+```
+
+#### Comandos útiles Docker
+
+```bash
+# Ver logs en tiempo real
+docker-compose logs -f web
+
+# Detener contenedores
+docker-compose down
+
+# Reiniciar servicios
+docker-compose restart
+
+# Reconstruir contenedores (si cambias Dockerfile)
+docker-compose build
+docker-compose up -d
+
+# Ejecutar comandos PHP dentro del contenedor
+docker-compose exec web php spark [comando]
+
+# Acceder a MySQL directamente
+docker-compose exec mysql mysql -u root -proot_password_2024 labartola
+```
+
+---
+
+### Opción B: Instalación Manual (Sin Docker)
+
+Si prefieres no usar Docker, puedes instalar manualmente.
+
+#### Requisitos Previos
+```bash
+- PHP >= 8.2
+- Composer
+- MySQL 8.0+ o MariaDB
+- Apache/Nginx
+- Extensiones PHP: intl, mbstring, gd, mysqli, json, zip, opcache
+```
+
+#### Pasos de Instalación
 
 1. **Clonar el repositorio**
 ```bash
@@ -386,23 +507,21 @@ composer install
 
 3. **Configurar variables de entorno**
 ```bash
-cp env .env
+cp .env.example .env
 ```
 
-Editar `.env`:
+Editar `.env` para instalación local:
 ```ini
-# Base URL
+CI_ENVIRONMENT = development
 app.baseURL = 'http://localhost:8080/'
 
-# Database
-database.default.hostname = localhost
+# Database (localhost)
+database.default.hostname = 127.0.0.1
 database.default.database = labartola
 database.default.username = root
 database.default.password =
 database.default.DBDriver = MySQLi
-
-# Ambiente
-CI_ENVIRONMENT = development
+database.default.port = 3306
 ```
 
 4. **Crear base de datos**
@@ -419,7 +538,6 @@ php spark shield:setup
 6. **Crear usuario admin inicial**
 ```bash
 php spark shield:user create
-# Seguir prompts:
 # Email: admin@labartola.com
 # Username: admin
 # Password: [tu_password_seguro]
@@ -435,15 +553,8 @@ chmod -R 777 writable
 ```
 
 8. **Iniciar servidor**
-
-**Con PHP built-in:**
 ```bash
 php spark serve
-```
-
-**Con Docker:**
-```bash
-docker-compose up -d
 ```
 
 9. **Acceder al sistema**
