@@ -1,9 +1,10 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('content') ?>
-<div class="container-fluid my-4">
+<section class="py-4" style="background-color: #000; min-height: 80vh;">
+<div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-warning">
+        <h2 style="color: #D4B68A;">
             <i class="bi bi-receipt"></i> Gestión de Pedidos
         </h2>
     </div>
@@ -26,7 +27,7 @@
     <div class="row mb-3">
         <div class="col-md-12">
             <div class="btn-group" role="group">
-                <button type="button" class="btn btn-outline-warning active" data-filter="todos">
+                <button type="button" class="btn btn-warning active" data-filter="todos" style="color: #000;">
                     Todos (<?= count($pedidos) ?>)
                 </button>
                 <button type="button" class="btn btn-outline-warning" data-filter="pendiente">
@@ -46,39 +47,34 @@
     </div>
 
     <div class="card bg-dark text-light">
-        <div class="card-body">
+        <div class="card-header" style="background-color: #1a1a1a; border-bottom: 2px solid #D4B68A;">
+            <h5 class="mb-0" style="color: #D4B68A;"><i class="bi bi-list-ul"></i> Lista de Pedidos</h5>
+        </div>
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-dark table-hover" id="tablaPedidos">
-                    <thead>
+                <table class="table table-dark table-hover mb-0" id="tablaPedidos">
+                    <thead style="background-color: #2a2a2a;">
                         <tr>
-                            <th>ID</th>
-                            <th>Cliente</th>
-                            <th>A nombre de</th>
-                            <th>Plato</th>
-                            <th>Cantidad</th>
-                            <th>Total</th>
-                            <th>Tipo Entrega</th>
-                            <th>Dirección</th>
-                            <th>Pago</th>
-                            <th>Estado</th>
-                            <th>Fecha</th>
-                            <th>Acciones</th>
+                            <th style="color: #D4B68A;">A nombre de</th>
+                            <th style="color: #D4B68A;">Plato</th>
+                            <th style="color: #D4B68A;">Cantidad</th>
+                            <th style="color: #D4B68A;">Total</th>
+                            <th style="color: #D4B68A;">Tipo Entrega</th>
+                            <th style="color: #D4B68A;">Dirección</th>
+                            <th style="color: #D4B68A;">Pago</th>
+                            <th style="color: #D4B68A;">Estado</th>
+                            <th style="color: #D4B68A;">Fecha</th>
+                            <th style="color: #D4B68A;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($pedidos)): ?>
                             <tr>
-                                <td colspan="12" class="text-center text-muted">No hay pedidos registrados</td>
+                                <td colspan="10" class="text-center text-muted">No hay pedidos registrados</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($pedidos as $pedido): ?>
                                 <tr data-estado="<?= esc($pedido['estado']) ?>">
-                                    <td><strong>#<?= $pedido['id'] ?></strong></td>
-                                    <td>
-                                        <?= esc($pedido['username'] ?? 'Usuario eliminado') ?>
-                                        <br>
-                                        <small class="text-light" style="opacity: 0.7;"><?= esc($pedido['email'] ?? '') ?></small>
-                                    </td>
                                     <td>
                                         <strong><?= esc($pedido['info_pedido']['nombre_cliente']) ?></strong>
                                     </td>
@@ -284,4 +280,6 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 </style>
 
+</div>
+</section>
 <?= $this->endSection() ?>

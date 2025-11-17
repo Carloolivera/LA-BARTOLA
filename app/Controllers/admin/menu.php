@@ -4,16 +4,19 @@ namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
 use App\Models\PlatoModel;
+use App\Models\CategoriaModel;
 use CodeIgniter\Database\Exceptions\DataException;
 
 class Menu extends BaseController
 {
     protected $platoModel;
+    protected $categoriaModel;
     protected $uploadPath;
 
     public function __construct()
     {
         $this->platoModel = new PlatoModel();
+        $this->categoriaModel = new CategoriaModel();
         // Carpeta de imágenes en public
         $this->uploadPath = ROOTPATH . 'public/assets/images/platos';
     }
@@ -25,7 +28,12 @@ class Menu extends BaseController
             ->orderBy('nombre', 'ASC')
             ->findAll();
 
-        return view('admin/menu/index', ['platos' => $platos]);
+        $categorias = $this->categoriaModel->getActivas();
+
+        return view('admin/menu/index', [
+            'platos' => $platos,
+            'categorias' => $categorias
+        ]);
     }
 
     public function crear()
@@ -36,7 +44,9 @@ class Menu extends BaseController
             return redirect()->to('/login')->with('error', 'No autorizado');
         }
 
-        return view('admin/menu/crear');
+        $categorias = $this->categoriaModel->getActivas();
+
+        return view('admin/menu/crear', ['categorias' => $categorias]);
     }
 
     public function guardar()
@@ -103,7 +113,12 @@ class Menu extends BaseController
             return redirect()->to('/admin/menu')->with('error', 'Plato no encontrado');
         }
 
-        return view('admin/menu/editar', ['plato' => $plato]);
+        $categorias = $this->categoriaModel->getActivas();
+
+        return view('admin/menu/editar', [
+            'plato' => $plato,
+            'categorias' => $categorias
+        ]);
     }
 
     public function actualizar($id)

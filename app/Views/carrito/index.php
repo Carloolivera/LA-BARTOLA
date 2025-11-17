@@ -958,6 +958,7 @@
       formData.append('tipo_entrega', 'delivery');
       formData.append('direccion', domicilio);
       formData.append('forma_pago', 'efectivo');
+      formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
 
       // Agregar comentarios adicionales
       let notasCompletas = '';
@@ -969,12 +970,32 @@
       }
       formData.append('notas', notasCompletas);
 
+      console.log('Enviando pedido...');
+
       const response = await fetch('<?= site_url('carrito/finalizar') ?>', {
         method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: formData
       });
 
-      const data = await response.json();
+      console.log('Status:', response.status);
+
+      const responseText = await response.text();
+      console.log('Response:', responseText.substring(0, 200));
+
+      if (!response.ok) {
+        throw new Error(`Error HTTP ${response.status}`);
+      }
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('No se pudo parsear JSON:', responseText);
+        throw new Error('Respuesta inválida del servidor. ¿Estás logueado?');
+      }
 
       if (!data.success) {
         hideLoading();
@@ -1030,8 +1051,9 @@
 
     } catch (error) {
       hideLoading();
-      console.error('Error:', error);
-      alert('Error al procesar el pedido. Por favor intenta nuevamente.');
+      console.error('Error completo:', error);
+      console.error('Mensaje:', error.message);
+      alert('Error al procesar el pedido: ' + error.message + '\n\nPor favor intenta nuevamente o contacta al soporte.');
     }
   }
 

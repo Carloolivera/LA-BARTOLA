@@ -3,22 +3,14 @@
 
 <style>
   .admin-menu-section {
-    background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+    background-color: #000;
     min-height: 80vh;
     padding: 2rem 0;
   }
 
-  .admin-menu-header {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  }
-
   .admin-menu-card {
-    background: white;
-    border: 1px solid #e0e0e0;
+    background-color: #1a1a1a;
+    border: 1px solid #D4B68A;
     border-radius: 12px;
     transition: all 0.3s ease;
     overflow: hidden;
@@ -26,7 +18,7 @@
   }
 
   .admin-menu-card:hover {
-    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 16px rgba(212, 182, 138, 0.3);
     transform: translateY(-2px);
   }
 
@@ -36,18 +28,18 @@
   }
 
   .admin-category-badge {
-    background: #6c757d;
-    color: white;
+    background: #D4B68A;
+    color: #000;
     padding: 4px 12px;
     border-radius: 20px;
     font-size: 0.85rem;
-    font-weight: 500;
+    font-weight: 600;
   }
 
   .admin-btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-color: #D4B68A;
     border: none;
-    color: white;
+    color: #000;
     padding: 10px 24px;
     border-radius: 8px;
     font-weight: 600;
@@ -56,13 +48,14 @@
 
   .admin-btn-primary:hover {
     transform: scale(1.02);
-    color: white;
+    color: #000;
+    background-color: #c9a770;
   }
 
   .admin-btn-secondary {
-    background: #6c757d;
-    border: none;
-    color: white;
+    background: transparent;
+    border: 2px solid #D4B68A;
+    color: #D4B68A;
     padding: 8px 20px;
     border-radius: 8px;
     font-weight: 500;
@@ -70,8 +63,8 @@
   }
 
   .admin-btn-secondary:hover {
-    background: #5a6268;
-    color: white;
+    background: #D4B68A;
+    color: #000;
   }
 
   .filter-tabs {
@@ -84,37 +77,41 @@
   .filter-tab {
     padding: 8px 16px;
     border-radius: 20px;
-    background: white;
-    border: 2px solid #e0e0e0;
-    color: #495057;
+    background: #1a1a1a;
+    border: 2px solid #D4B68A;
+    color: #D4B68A;
     cursor: pointer;
     transition: all 0.2s;
     font-weight: 500;
   }
 
   .filter-tab.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-color: #667eea;
-    color: white;
+    background: #D4B68A;
+    border-color: #D4B68A;
+    color: #000;
   }
 
   .filter-tab:hover {
-    border-color: #667eea;
+    background: rgba(212, 182, 138, 0.2);
+  }
+
+  .card-body {
+    background-color: #1a1a1a;
   }
 </style>
 
 <section class="admin-menu-section">
   <div class="container">
-    <div class="admin-menu-header">
+    <div class="mb-4">
       <div class="d-flex justify-content-between align-items-center flex-wrap">
-        <div>
-          <h1 class="h3 mb-1" style="color: #495057; font-weight: 700;">Gestión del Menú</h1>
-          <p class="text-muted mb-0">Administra los platos y categorías de tu restaurante</p>
+        <div class="mb-3 mb-md-0">
+          <h1 class="h3 mb-1" style="color: #D4B68A; font-weight: 700;">Gestión del Menú</h1>
+          <p class="text-light mb-0">Administra los platos y categorías de tu restaurante</p>
         </div>
         <div>
-          <button type="button" class="admin-btn-secondary" data-bs-toggle="modal" data-bs-target="#modalCategorias">
+          <a href="<?= site_url('admin/categorias') ?>" class="admin-btn-secondary">
             <i class="bi bi-tags"></i> Gestionar Categorías
-          </button>
+          </a>
           <a href="<?= site_url('admin/menu/crear') ?>" class="admin-btn-primary">
             <i class="bi bi-plus-circle"></i> Agregar Plato
           </a>
@@ -138,11 +135,11 @@
     <!-- Filtros por categoría -->
     <div class="filter-tabs">
       <div class="filter-tab active" data-category="todas">Todas</div>
-      <div class="filter-tab" data-category="Bebidas">Bebidas</div>
-      <div class="filter-tab" data-category="Empanadas">Empanadas</div>
-      <div class="filter-tab" data-category="Pizzas">Pizzas</div>
-      <div class="filter-tab" data-category="Tartas">Tartas</div>
-      <div class="filter-tab" data-category="Postres">Postres</div>
+      <?php if (!empty($categorias)): ?>
+        <?php foreach ($categorias as $cat): ?>
+          <div class="filter-tab" data-category="<?= esc($cat['nombre']) ?>"><?= esc($cat['nombre']) ?></div>
+        <?php endforeach; ?>
+      <?php endif; ?>
     </div>
 
     <div class="row g-4">
@@ -157,30 +154,30 @@
               <?php if (!empty($plato['imagen'])): ?>
                 <img src="<?= base_url('assets/images/platos/' . $plato['imagen']) ?>" class="card-img-top" alt="<?= esc($plato['nombre']) ?>">
               <?php else: ?>
-                <div style="height: 180px; background: #e9ecef; display: flex; align-items: center; justify-content: center;">
-                  <i class="bi bi-image" style="font-size: 3rem; color: #6c757d;"></i>
+                <div style="height: 180px; background: #2a2a2a; display: flex; align-items: center; justify-content: center;">
+                  <i class="bi bi-image" style="font-size: 3rem; color: #D4B68A;"></i>
                 </div>
               <?php endif; ?>
               <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start mb-2">
-                  <h5 class="card-title mb-0" style="color: #495057; font-weight: 600;"><?= esc($plato['nombre']) ?></h5>
+                  <h5 class="card-title mb-0" style="color: #D4B68A; font-weight: 600;"><?= esc($plato['nombre']) ?></h5>
                   <span class="badge bg-<?= $plato['disponible'] ? 'success' : 'secondary' ?>">
                     <?= $plato['disponible'] ? 'Disponible' : 'No disponible' ?>
                   </span>
                 </div>
 
                 <span class="admin-category-badge mb-2 d-inline-block"><?= esc($plato['categoria']) ?></span>
-                <p class="card-text small text-muted mb-3"><?= esc($plato['descripcion']) ?></p>
+                <p class="card-text small text-light mb-3"><?= esc($plato['descripcion']) ?></p>
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                  <div><strong style="color: #667eea; font-size: 1.2rem;">$<?= number_format($plato['precio'], 0, ',', '.') ?></strong></div>
-                  <div class="small text-muted">
+                  <div><strong style="color: #D4B68A; font-size: 1.2rem;">$<?= number_format($plato['precio'], 0, ',', '.') ?></strong></div>
+                  <div class="small text-light">
                     Stock: <strong><?= $plato['stock_ilimitado'] ? '∞' : esc($plato['stock'] ?? 0) ?></strong>
                   </div>
                 </div>
 
                 <div class="d-flex gap-2">
-                  <a href="<?= site_url('admin/menu/editar/' . $plato['id']) ?>" class="btn btn-sm btn-outline-primary flex-fill">
+                  <a href="<?= site_url('admin/menu/editar/' . $plato['id']) ?>" class="btn btn-sm btn-outline-warning flex-fill">
                     <i class="bi bi-pencil"></i> Editar
                   </a>
                   <a href="<?= site_url('admin/menu/eliminar/' . $plato['id']) ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Eliminar este plato?')">
@@ -195,50 +192,6 @@
     </div>
   </div>
 </section>
-
-<!-- Modal Gestionar Categorías -->
-<div class="modal fade" id="modalCategorias" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content" style="border-radius: 16px;">
-      <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 16px 16px 0 0;">
-        <h5 class="modal-title">Gestionar Categorías</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <p class="text-muted small">Categorías actuales del menú:</p>
-        <ul class="list-group mb-3">
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            Bebidas
-            <span class="badge bg-secondary rounded-pill">Categoría predefinida</span>
-          </li>
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            Empanadas
-            <span class="badge bg-secondary rounded-pill">Categoría predefinida</span>
-          </li>
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            Pizzas
-            <span class="badge bg-secondary rounded-pill">Categoría predefinida</span>
-          </li>
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            Tartas
-            <span class="badge bg-secondary rounded-pill">Categoría predefinida</span>
-          </li>
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            Postres
-            <span class="badge bg-secondary rounded-pill">Categoría predefinida</span>
-          </li>
-        </ul>
-        <div class="alert alert-info">
-          <i class="bi bi-info-circle me-2"></i>
-          <strong>Nota:</strong> Las categorías se crean automáticamente al agregar platos. Simplemente ingresa el nombre de la categoría al crear o editar un plato.
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <script>
   // Filtro por categorías

@@ -3,30 +3,41 @@
 
 <style>
   .admin-form-section {
-    background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+    background-color: #000;
     min-height: 80vh;
     padding: 2rem 0;
   }
 
   .admin-form-card {
-    background: white;
+    background-color: #1a1a1a;
+    border: 1px solid #D4B68A;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     padding: 2rem;
   }
 
-  .admin-form-header {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  .form-control:focus, .form-select:focus {
+    border-color: #D4B68A;
+    box-shadow: 0 0 0 0.2rem rgba(212, 182, 138, 0.25);
+    background-color: #2a2a2a;
+    color: #f5f5dc;
+  }
+
+  .form-control, .form-select {
+    background-color: #2a2a2a;
+    border-color: #D4B68A;
+    color: #f5f5dc;
+  }
+
+  .form-label {
+    font-weight: 500;
+    color: #D4B68A;
+    margin-bottom: 0.5rem;
   }
 
   .admin-btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-color: #D4B68A;
     border: none;
-    color: white;
+    color: #000;
     padding: 10px 24px;
     border-radius: 8px;
     font-weight: 600;
@@ -35,33 +46,22 @@
 
   .admin-btn-primary:hover {
     transform: scale(1.02);
-    color: white;
+    color: #000;
+    background-color: #c9a770;
   }
 
   .admin-btn-secondary {
-    background: white;
-    border: 2px solid #667eea;
-    color: #667eea;
+    background: transparent;
+    border: 2px solid #D4B68A;
+    color: #D4B68A;
     padding: 8px 20px;
     border-radius: 8px;
     font-weight: 500;
-    transition: all 0.2s;
   }
 
   .admin-btn-secondary:hover {
-    background: #667eea;
-    color: white;
-  }
-
-  .form-control:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-  }
-
-  .form-label {
-    font-weight: 500;
-    color: #495057;
-    margin-bottom: 0.5rem;
+    background: #D4B68A;
+    color: #000;
   }
 </style>
 
@@ -69,11 +69,11 @@
   <div class="container">
     <div class="row justify-content-center">
       <div class="col-lg-8">
-        <div class="admin-form-header">
+        <div class="mb-4">
           <div class="d-flex justify-content-between align-items-center">
             <div>
-              <h1 class="h3 mb-1" style="color: #495057; font-weight: 700;">Crear Nuevo Plato</h1>
-              <p class="text-muted mb-0">Completa el formulario para agregar un nuevo plato al menú</p>
+              <h1 class="h3 mb-1" style="color: #D4B68A; font-weight: 700;">Crear Nuevo Plato</h1>
+              <p class="text-light mb-0">Completa el formulario para agregar un nuevo plato al menú</p>
             </div>
             <a href="<?= site_url('admin/menu') ?>" class="admin-btn-secondary">
               <i class="bi bi-arrow-left"></i> Volver
@@ -104,9 +104,20 @@
             </div>
 
             <div class="mb-3">
-              <label class="form-label">Categoría</label>
-              <input type="text" name="categoria" class="form-control" value="<?= old('categoria') ?>" placeholder="Ej: Pizzas, Empanadas, Bebidas, etc.">
-              <small class="text-muted">Si no existe, se creará automáticamente</small>
+              <label class="form-label">Categoría *</label>
+              <select name="categoria" class="form-select" required>
+                <option value="">Selecciona una categoría</option>
+                <?php if (!empty($categorias)): ?>
+                  <?php foreach ($categorias as $cat): ?>
+                    <option value="<?= esc($cat['nombre']) ?>" <?= old('categoria') === $cat['nombre'] ? 'selected' : '' ?>>
+                      <?= esc($cat['nombre']) ?>
+                    </option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+              </select>
+              <small class="text-light">
+                <a href="<?= site_url('admin/categorias') ?>" target="_blank" style="color: #D4B68A;">Gestionar categorías</a>
+              </small>
             </div>
 
             <div class="mb-3">
@@ -118,26 +129,26 @@
               <div class="col-md-6 mb-3">
                 <label class="form-label">Precio *</label>
                 <div class="input-group">
-                  <span class="input-group-text">$</span>
+                  <span class="input-group-text" style="background-color: #D4B68A; color: #000; border-color: #D4B68A;">$</span>
                   <input type="number" step="0.01" name="precio" class="form-control" value="<?= old('precio') ?>" placeholder="0.00" required>
                 </div>
               </div>
               <div class="col-md-6 mb-3">
                 <label class="form-label">Stock *</label>
                 <input type="number" name="stock" class="form-control" value="<?= old('stock', 0) ?>" min="0" placeholder="0" required>
-                <small class="text-muted">Stock disponible en unidades</small>
+                <small class="text-light">Stock disponible en unidades</small>
               </div>
             </div>
 
             <div class="mb-3">
               <label class="form-label">Imagen *</label>
               <input type="file" name="imagen" class="form-control" accept="image/*" required>
-              <small class="text-muted">Formatos aceptados: JPG, PNG, GIF. Sin límite de tamaño</small>
+              <small class="text-light">Formatos aceptados: JPG, PNG, GIF. Sin límite de tamaño</small>
             </div>
 
             <div class="form-check form-switch mb-4">
               <input type="checkbox" name="disponible" id="disponible" class="form-check-input" checked>
-              <label for="disponible" class="form-check-label">Plato disponible para la venta</label>
+              <label for="disponible" class="form-check-label text-light">Plato disponible para la venta</label>
             </div>
 
             <div class="d-flex gap-2">

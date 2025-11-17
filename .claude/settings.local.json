@@ -48,7 +48,8 @@
       "Bash(php spark make:migration:*)",
       "Bash(php spark migrate:*)",
       "Bash(powershell -Command:*)",
-      "Bash(timeout 10 bash:*)"
+      "Bash(timeout 10 bash:*)",
+      "Bash(docker-compose exec mysql mysql:*)"
     ],
     "deny": [],
     "ask": []
