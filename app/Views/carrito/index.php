@@ -645,7 +645,12 @@
 
       <div class="form-group">
         <label class="form-label">Domicilio *</label>
-        <input type="text" class="form-input" id="domicilio" placeholder="Tu dirección completa" required>
+        <div style="display: flex; gap: 10px; align-items: flex-start;">
+          <input type="text" class="form-input" id="domicilio" placeholder="Tu dirección completa" required style="flex: 1;">
+          <button type="button" class="btn-retiro-local" onclick="usarDireccionLocal()" style="background: #D4B68A; color: #000; border: none; padding: 12px 15px; border-radius: 8px; cursor: pointer; white-space: nowrap; font-weight: 500;">
+            Retiro por el local
+          </button>
+        </div>
       </div>
 
       <div class="form-group">
@@ -948,6 +953,14 @@
   // Cerrar modal de pedido
   function closeOrderModal() {
     document.getElementById('orderModal').classList.remove('active');
+  }
+
+  // Usar dirección de La Bartola para retiro en el local
+  function usarDireccionLocal() {
+    const domicilioInput = document.getElementById('domicilio');
+    domicilioInput.value = 'Newbery 356, Buenos Aires (RETIRO POR EL LOCAL)';
+    document.getElementById('entreCalles').value = '';
+    showNotification('Dirección configurada para retiro en el local', 'success');
   }
 
   // Enviar por WhatsApp

@@ -20,17 +20,6 @@ $routes->get('carrito/getCount', 'Carrito::getCount');
 $routes->post('carrito/finalizar', 'Carrito::finalizar');
 
 
-// ---------------- USUARIOS ----------------
-$routes->group('usuario', ['filter' => 'auth'], function($routes) {
-    $routes->get('/', 'Usuario::index');
-    $routes->get('crear', 'Usuario::crear');
-    $routes->post('guardar', 'Usuario::guardar');
-    $routes->get('editar/(:num)', 'Usuario::editar/$1');
-    $routes->post('actualizar/(:num)', 'Usuario::actualizar/$1');
-    $routes->get('eliminar/(:num)', 'Usuario::eliminar/$1');
-    $routes->post('toggleEstado/(:num)', 'Usuario::toggleEstado/$1');
-});
-
 // ---------------- ADMIN ----------------
 $routes->group('admin', ['filter' => 'group:admin'], function($routes) {
     // PEDIDOS
@@ -43,13 +32,6 @@ $routes->group('admin', ['filter' => 'group:admin'], function($routes) {
     $routes->post('pedidos/eliminar/(:num)', 'Admin\Pedidos::eliminar/$1');
     $routes->get('pedidos/imprimir/(:num)', 'Admin\Pedidos::imprimirTicket/$1');
 
-    // INVENTARIO
-    $routes->get('inventario', 'Admin\Inventario::index');
-    $routes->match(['GET', 'POST'], 'inventario/crear', 'Admin\Inventario::crear');
-    $routes->match(['GET', 'POST'], 'inventario/editar/(:num)', 'Admin\Inventario::editar/$1');
-    $routes->get('inventario/eliminar/(:num)', 'Admin\Inventario::eliminar/$1');
-    $routes->post('inventario/movimiento/(:num)', 'Admin\Inventario::movimiento/$1');
-
     // CAJA CHICA
     $routes->get('caja-chica', 'Admin\CajaChica::index');
     $routes->get('caja-chica/ver/(:segment)', 'Admin\CajaChica::ver/$1');
@@ -58,10 +40,6 @@ $routes->group('admin', ['filter' => 'group:admin'], function($routes) {
     $routes->get('caja-chica/eliminar/(:num)', 'Admin\CajaChica::eliminar/$1');
     $routes->get('caja-chica/archivo', 'Admin\CajaChica::archivo');
     $routes->get('caja-chica/imprimir/(:segment)', 'Admin\CajaChica::imprimir/$1');
-
-
-    // GESTIÓN DE USUARIOS (desde admin)
-    $routes->get('usuarios', 'Usuario::index');
 });
 
 // CRUD DE MENÚ (ADMIN o VENDEDOR)

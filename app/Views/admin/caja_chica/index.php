@@ -39,6 +39,34 @@
             </div>
         <?php endif; ?>
 
+        <!-- Resumen -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <p class="card-text mb-1 small">(*) Total Efectivo</p>
+                        <h3 class="mb-0">$<?= number_format($efectivo, 2) ?></h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white" style="background-color: #6f42c1;">
+                    <div class="card-body text-center">
+                        <p class="card-text mb-1 small">Total Dinero Digital</p>
+                        <h3 class="mb-0">$<?= number_format($digital, 2) ?></h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card" style="background-color: #D4B68A; color: #000;">
+                    <div class="card-body text-center">
+                        <p class="card-text mb-1 fw-bold">SALDO ACTUAL</p>
+                        <h3 class="mb-0 fw-bold">$<?= number_format($saldo, 2) ?></h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Formulario Agregar Movimiento -->
         <?php if ($esHoy): ?>
         <div class="card mb-4" style="background-color: #1a1a1a; border: 1px solid #D4B68A;">
@@ -187,34 +215,6 @@
                         </tfoot>
                     </table>
                 </div>
-            </div>
-        </div>
-
-        <!-- Resumen -->
-        <div class="row g-3 mt-3">
-            <div class="col-md-6">
-                <div class="card bg-success text-white">
-                    <div class="card-body text-center">
-                        <p class="card-text mb-1 small">(*) Total Efectivo</p>
-                        <h3 class="mb-0">$<?= number_format($efectivo, 2) ?></h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card text-white" style="background-color: #6f42c1;">
-                    <div class="card-body text-center">
-                        <p class="card-text mb-1 small">Total Dinero Digital</p>
-                        <h3 class="mb-0">$<?= number_format($digital, 2) ?></h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Saldo Final -->
-        <div class="card mt-3" style="background-color: #D4B68A; color: #000;">
-            <div class="card-body text-center">
-                <p class="card-text mb-1 fw-bold">SALDO ACTUAL</p>
-                <h2 class="mb-0 fw-bold">$<?= number_format($saldo, 2) ?></h2>
             </div>
         </div>
     </div>

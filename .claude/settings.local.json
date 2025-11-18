@@ -49,7 +49,10 @@
       "Bash(php spark migrate:*)",
       "Bash(powershell -Command:*)",
       "Bash(timeout 10 bash:*)",
-      "Bash(docker-compose exec mysql mysql:*)"
+      "Bash(docker-compose exec mysql mysql:*)",
+      "Bash(git fetch:*)",
+      "Bash(git merge:*)",
+      "Bash(gh pr list:*)"
     ],
     "deny": [],
     "ask": []
