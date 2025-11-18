@@ -46,14 +46,14 @@ class Filters extends BaseFilters
 
     public array $globals = [
         'before' => [
+            'invalidchars',
             // 'honeypot',
-            // 'csrf',
-            // 'invalidchars',
+            // 'csrf', // CSRF se maneja por ruta específica
         ],
         'after' => [
             'toolbar',
+            'secureheaders',
             // 'honeypot',
-            // 'secureheaders',
         ],
     ];
 
