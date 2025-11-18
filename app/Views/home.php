@@ -117,7 +117,13 @@
         <div class="plato-item" data-name="<?= strtolower(esc($plato['nombre'])) ?>" data-desc="<?= strtolower(esc($plato['descripcion'])) ?>">
           <div class="plato-image">
             <?php if (!empty($plato['imagen'])): ?>
-              <img src="<?= base_url('assets/images/platos/' . $plato['imagen']) ?>"
+              <?php
+              // Detectar si es URL externa o archivo local
+              $imagenUrl = (strpos($plato['imagen'], 'http') === 0)
+                ? $plato['imagen']
+                : base_url('assets/images/platos/' . $plato['imagen']);
+              ?>
+              <img src="<?= $imagenUrl ?>"
                    alt="<?= esc($plato['nombre']) ?>"
                    loading="lazy"
                    style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">

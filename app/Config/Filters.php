@@ -34,13 +34,13 @@ class Filters extends BaseFilters
 
     public array $required = [
         'before' => [
-            'forcehttps',
-            'pagecache',
+            // 'forcehttps', // Solo activar en producción con SSL
+            // 'pagecache', // Desactivado - puede causar lentitud en desarrollo
         ],
         'after' => [
-            'pagecache',
-            'performance',
-            'toolbar',
+            // 'pagecache', // Desactivado - puede causar lentitud en desarrollo
+            // 'performance', // DESACTIVADO - Causa overhead de medición
+            // 'toolbar', // DESACTIVADO - Causa lentitud de 3-5 segundos
         ],
     ];
 
