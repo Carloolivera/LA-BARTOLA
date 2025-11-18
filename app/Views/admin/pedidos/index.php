@@ -177,11 +177,22 @@
     gap: 8px;
     margin-bottom: 20px;
     padding-bottom: 10px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+.filtros-container::-webkit-scrollbar {
+    height: 4px;
+}
+
+.filtros-container::-webkit-scrollbar-thumb {
+    background: #D4B68A;
+    border-radius: 2px;
 }
 
 .filtro-btn {
-    min-width: 100px;
-    padding: 8px 16px;
+    min-width: fit-content;
+    padding: 8px 12px;
     border: 2px solid #D4B68A;
     background: transparent;
     color: #D4B68A;
@@ -190,6 +201,8 @@
     cursor: pointer;
     white-space: nowrap;
     transition: all 0.2s;
+    font-size: 0.85rem;
+    flex-shrink: 0;
 }
 
 .filtro-btn.active {
@@ -411,7 +424,7 @@
                                 <div class="item-nombre"><?= esc($item['plato_nombre']) ?></div>
                                 <div class="item-cantidad">
                                     <button class="qty-btn-pedido" onclick="cambiarCantidad(<?= $item['id'] ?>, -1, event)">−</button>
-                                    <span class="qty-display" id="qty-<?= $item['id'] ?>"><?= $item['cantidad'] ?></span>
+                                    <span class="qty-display" id="qty-<?= $item['id'] ?>" data-precio="<?= $item['precio'] ?>"><?= $item['cantidad'] ?></span>
                                     <button class="qty-btn-pedido" onclick="cambiarCantidad(<?= $item['id'] ?>, 1, event)">+</button>
                                 </div>
                                 <div class="item-subtotal" id="subtotal-<?= $item['id'] ?>">
@@ -534,6 +547,9 @@ document.querySelectorAll('.filtro-btn').forEach(btn => {
 });
 
 // Cambiar cantidad de item
+// Debounce timers para actualización de cantidad
+let updateTimers = {};
+
 function cambiarCantidad(itemId, delta, event) {
     // Evitar que el evento se propague
     if (event) {
@@ -562,7 +578,38 @@ function cambiarCantidad(itemId, delta, event) {
         return;
     }
 
-    // Actualizar en el servidor
+    // Actualizar visualmente de inmediato
+    qtyDisplay.textContent = cantidad;
+
+    // Calcular y actualizar subtotal visualmente
+    const precioUnitario = parseFloat(qtyDisplay.dataset.precio || 0);
+    const nuevoSubtotal = precioUnitario * cantidad;
+    if (subtotalDisplay) {
+        subtotalDisplay.textContent = `$${nuevoSubtotal.toLocaleString('es-AR')}`;
+    }
+
+    // Actualizar total visualmente
+    actualizarTotal(itemId);
+
+    // Cancelar timer anterior si existe
+    if (updateTimers[itemId]) {
+        clearTimeout(updateTimers[itemId]);
+    }
+
+    // Deshabilitar botones temporalmente para evitar clicks rápidos
+    const btnMenos = event.target.closest('.pedido-item').querySelector('.qty-btn-pedido[onclick*="-1"]');
+    const btnMas = event.target.closest('.pedido-item').querySelector('.qty-btn-pedido[onclick*="1,"]');
+    if (btnMenos) btnMenos.style.opacity = '0.5';
+    if (btnMas) btnMas.style.opacity = '0.5';
+
+    // Programar actualización en servidor con delay de 500ms
+    updateTimers[itemId] = setTimeout(() => {
+        actualizarCantidadEnServidor(itemId, cantidad, qtyDisplay, subtotalDisplay, btnMenos, btnMas);
+    }, 500);
+}
+
+// Función separada para actualizar en el servidor
+function actualizarCantidadEnServidor(itemId, cantidad, qtyDisplay, subtotalDisplay, btnMenos, btnMas) {
     fetch('<?= site_url("admin/pedidos/actualizarItem") ?>', {
         method: 'POST',
         headers: {
@@ -572,7 +619,12 @@ function cambiarCantidad(itemId, delta, event) {
     })
     .then(response => response.json())
     .then(data => {
+        // Rehabilitar botones
+        if (btnMenos) btnMenos.style.opacity = '1';
+        if (btnMas) btnMas.style.opacity = '1';
+
         if (data.success) {
+            // Confirmar valores del servidor
             qtyDisplay.textContent = data.cantidad;
             if (subtotalDisplay) {
                 subtotalDisplay.textContent = `$${Number(data.subtotal).toLocaleString('es-AR')}`;
@@ -581,11 +633,19 @@ function cambiarCantidad(itemId, delta, event) {
             mostrarNotificacion('Cantidad actualizada', 'success');
         } else {
             mostrarNotificacion(data.message || 'Error al actualizar', 'error');
+            // Revertir cambios visuales si falla
+            location.reload();
         }
     })
     .catch(error => {
+        // Rehabilitar botones
+        if (btnMenos) btnMenos.style.opacity = '1';
+        if (btnMas) btnMas.style.opacity = '1';
+
         console.error('Error:', error);
         mostrarNotificacion('Error al actualizar cantidad', 'error');
+        // Revertir cambios visuales
+        location.reload();
     });
 }
 
@@ -646,9 +706,9 @@ function guardarEstado(pedidoId, key) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            // Cerrar modal y recargar inmediatamente
             cerrarModalEditar();
-            mostrarNotificacion('Estado actualizado correctamente', 'success');
-            setTimeout(() => location.reload(), 1000);
+            location.reload();
         } else {
             mostrarNotificacion(data.message || 'Error al cambiar estado', 'error');
         }

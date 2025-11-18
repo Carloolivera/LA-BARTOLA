@@ -243,7 +243,7 @@ class Carrito extends Controller
     }
 
     // Validar forma de pago
-    if (!in_array($forma_pago, ['efectivo', 'qr', 'tarjeta'])) {
+    if (!in_array($forma_pago, ['efectivo', 'qr', 'mercado_pago', 'transferencia', 'tarjeta'])) {
         return redirect()->to('/carrito')->with('error', 'Forma de pago inválida');
     }
 

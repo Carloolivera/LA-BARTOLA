@@ -143,6 +143,14 @@ class Pedidos extends BaseController
             $this->devolverStock($pedido['plato_id'], $pedido['cantidad']);
         }
 
+        // REGISTRAR EN CAJA CHICA cuando el estado cambia a "completado" o "cancelado"
+        if ($nuevoEstado === 'completado' && $estadoAnterior !== 'completado') {
+            $this->registrarEnCajaChica($pedido, 'entrada');
+        } elseif ($nuevoEstado === 'cancelado' && $estadoAnterior === 'completado') {
+            // Si se cancela un pedido completado, registrar como salida (devolución)
+            $this->registrarEnCajaChica($pedido, 'salida');
+        }
+
         // Crear notificación para el usuario del pedido
         $mensajesEstado = [
             'pendiente' => 'Tu pedido está pendiente de confirmación',
@@ -160,21 +168,27 @@ class Pedidos extends BaseController
             'cancelado' => 'bi-x-circle-fill'
         ];
 
-        if (isset($mensajesEstado[$nuevoEstado])) {
-            $this->notificacionModel->crearNotificacion([
-                'usuario_id' => $pedido['usuario_id'],
-                'tipo' => 'cambio_estado_pedido',
-                'titulo' => 'Actualización de Pedido #' . $id,
-                'mensaje' => $mensajesEstado[$nuevoEstado],
-                'icono' => $iconosEstado[$nuevoEstado] ?? 'bi-info-circle',
-                'url' => site_url('pedido'),
-                'leida' => 0,
-                'data' => json_encode([
-                    'pedido_id' => $id,
-                    'estado_anterior' => $estadoAnterior,
-                    'estado_nuevo' => $nuevoEstado
-                ])
-            ]);
+        // Solo crear notificación si hay un usuario_id válido (pedidos no públicos)
+        if (isset($mensajesEstado[$nuevoEstado]) && !empty($pedido['usuario_id'])) {
+            try {
+                $this->notificacionModel->crearNotificacion([
+                    'usuario_id' => $pedido['usuario_id'],
+                    'tipo' => 'cambio_estado_pedido',
+                    'titulo' => 'Actualización de Pedido #' . $id,
+                    'mensaje' => $mensajesEstado[$nuevoEstado],
+                    'icono' => $iconosEstado[$nuevoEstado] ?? 'bi-info-circle',
+                    'url' => site_url('pedido'),
+                    'leida' => 0,
+                    'data' => json_encode([
+                        'pedido_id' => $id,
+                        'estado_anterior' => $estadoAnterior,
+                        'estado_nuevo' => $nuevoEstado
+                    ])
+                ]);
+            } catch (\Exception $e) {
+                // Log el error pero no interrumpir el flujo
+                log_message('error', 'Error al crear notificación para pedido #' . $id . ': ' . $e->getMessage());
+            }
         }
 
         return $this->response->setJSON([
@@ -492,6 +506,49 @@ class Pedidos extends BaseController
         log_message('info', "Stock devuelto: Plato #{$platoId} - Cantidad: {$cantidad} - Stock actual: {$nuevoStock}");
 
         return true;
+    }
+
+    /**
+     * REGISTRAR MOVIMIENTO EN CAJA CHICA
+     */
+    private function registrarEnCajaChica($pedido, $tipo)
+    {
+        try {
+            // Extraer información del pedido
+            $info = $this->extraerInfoPedido($pedido['notas']);
+            $nombreCliente = $info['nombre'] ?? 'Cliente';
+            $formaPago = strtolower($info['forma_pago'] ?? 'efectivo');
+
+            // Determinar si es digital o efectivo
+            $esDigital = in_array($formaPago, ['qr', 'mercado_pago', 'mercadopago', 'tarjeta']) ? 1 : 0;
+
+            // Preparar datos para caja chica
+            $concepto = $tipo === 'entrada'
+                ? "Pedido #{$pedido['id']} - {$nombreCliente}"
+                : "Devolución Pedido #{$pedido['id']} - {$nombreCliente}";
+
+            $datosMovimiento = [
+                'fecha' => date('Y-m-d'),
+                'hora' => date('H:i:s'),
+                'concepto' => $concepto,
+                'tipo' => $tipo,
+                'monto' => $pedido['total'],
+                'es_digital' => $esDigital,
+                'user_id' => auth()->id(),
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+
+            // Insertar en caja_chica
+            $this->db->table('caja_chica')->insert($datosMovimiento);
+
+            log_message('info', "Movimiento en caja chica registrado: Pedido #{$pedido['id']} - Tipo: {$tipo} - Monto: {$pedido['total']}");
+
+            return true;
+        } catch (\Exception $e) {
+            log_message('error', "Error al registrar en caja chica: " . $e->getMessage());
+            return false;
+        }
     }
 
     private function extraerInfoPedido($notas)
