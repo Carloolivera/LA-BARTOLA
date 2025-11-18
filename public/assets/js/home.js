@@ -105,16 +105,11 @@ async function goToCart() {
       });
 
       const data = await response.json();
-      if (!data.success) {
-        console.error(`Error al agregar ${item.nombre}:`, data.message);
-      }
     }
 
     // Redirigir al carrito
     window.location.href = carritoUrl;
   } catch (error) {
-    console.error('Error al sincronizar carrito:', error);
-    // Simplemente recargar la página para que el usuario pueda intentar nuevamente
     cartFloat.style.opacity = '1';
     cartFloat.style.pointerEvents = 'auto';
   }

@@ -310,27 +310,6 @@ class Carrito extends Controller
 
     $pedido_id = $primer_pedido_id;
 
-    // TODO: Registrar venta en caja si es en efectivo (funcionalidad deshabilitada temporalmente)
-    // if ($forma_pago === 'efectivo') {
-    //     // Lógica de caja comentada hasta implementar sistema completo
-    // }
-
-    // TODO: Crear notificación para administradores (funcionalidad deshabilitada temporalmente)
-    // El método notificarAdmins() no existe en NotificacionModel
-    // $this->notificacionModel->notificarAdmins(
-    //     'nuevo_pedido',
-    //     'Nuevo Pedido Recibido',
-    //     "Pedido #{$pedido_id} de {$nombre_cliente} por $" . number_format($total, 2),
-    //     'bi-bag-check-fill',
-    //     site_url("admin/pedidos/ver/{$pedido_id}"),
-    //     [
-    //         'pedido_id' => $pedido_id,
-    //         'total' => $total,
-    //         'tipo_entrega' => $tipo_entrega,
-    //         'forma_pago' => $forma_pago
-    //     ]
-    // );
-
     // Limpiar carrito de la sesión
     $this->session->remove('carrito');
 
@@ -345,11 +324,6 @@ class Carrito extends Controller
 
     return redirect()->to('/pedido')->with('success', 'Pedido realizado exitosamente');
 }
-
-    public function mostrarQR()
-    {
-        return view('carrito/qr');
-    }
 
     public function getCount()
     {

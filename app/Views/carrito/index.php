@@ -1013,8 +1013,6 @@
       }
       formData.append('notas', notasCompletas);
 
-      console.log('Enviando pedido...');
-
       const response = await fetch('<?= site_url('carrito/finalizar') ?>', {
         method: 'POST',
         headers: {
@@ -1023,10 +1021,7 @@
         body: formData
       });
 
-      console.log('Status:', response.status);
-
       const responseText = await response.text();
-      console.log('Response:', responseText.substring(0, 200));
 
       if (!response.ok) {
         throw new Error(`Error HTTP ${response.status}`);
@@ -1036,7 +1031,6 @@
       try {
         data = JSON.parse(responseText);
       } catch (e) {
-        console.error('No se pudo parsear JSON:', responseText);
         throw new Error('Respuesta inválida del servidor. ¿Estás logueado?');
       }
 
@@ -1104,8 +1098,6 @@
 
     } catch (error) {
       hideLoading();
-      console.error('Error completo:', error);
-      console.error('Mensaje:', error.message);
       showNotification('Error al procesar el pedido. Por favor intenta nuevamente.', 'error');
     }
   }

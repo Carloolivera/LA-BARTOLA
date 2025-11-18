@@ -56,7 +56,9 @@
       "Bash(del \"c:\\Dev\\labartola\\add_cliente.sql\" \"c:\\Dev\\labartola\\add_cliente_group.php\" \"c:\\Dev\\labartola\\labartola (1).sql\" \"c:\\Dev\\labartola\\builds\" \"c:\\Dev\\labartola\\agents.md\")",
       "Bash(cat:*)",
       "Bash(git restore:*)",
-      "Bash(docker-compose exec:*)"
+      "Bash(docker-compose exec:*)",
+      "Bash(chmod:*)",
+      "Bash(del \"C:\\Dev\\labartola\\README_UBICACION_WHATSAPP.md\" \"C:\\Dev\\labartola\\README_GOOGLE_OAUTH.md\" \"C:\\Dev\\labartola\\DOCKER_SETUP.md\" \"C:\\Dev\\labartola\\README_MERCADOPAGO.md\" \"C:\\Dev\\labartola\\INSTRUCCIONES_DE_TRABAJO.md\" \"C:\\Dev\\labartola\\OPTIMIZACIONES.md\" \"C:\\Dev\\labartola\\README-DEV.md\" \"C:\\Dev\\labartola\\SOLUCION-NOTIFICACIONES.md\" \"C:\\Dev\\labartola\\TOAST-SYSTEM.md\" \"C:\\Dev\\labartola\\IMPRESORA_TICKETS.md\" \"C:\\Dev\\labartola\\README.md\" \"C:\\Dev\\labartola\\SETUP_RAPIDO.md\" \"C:\\Dev\\labartola\\MEJORAS_SEGURIDAD.md\" \"C:\\Dev\\labartola\\RESUMEN_MEJORAS.md\" \"C:\\Dev\\labartola\\SOLUCION_VELOCIDAD.md\" \"C:\\Dev\\labartola\\INSTRUCCIONES_VELOCIDAD.md\" \"C:\\Dev\\labartola\\FIX_VELOCIDAD_FINAL.md\" \"C:\\Dev\\labartola\\DEPLOY_HOSTINGER.md\" \"C:\\Dev\\labartola\\CHECKLIST_DEPLOY.md\" \"C:\\Dev\\labartola\\README_DEPLOY.md\")"
     ],
     "deny": [],
     "ask": []

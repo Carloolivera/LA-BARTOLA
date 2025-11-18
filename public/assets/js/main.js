@@ -14,7 +14,7 @@ function actualizarContadorCarrito() {
         cartCount.textContent = data.cart_count;
       }
     })
-    .catch(error => console.error('Error:', error));
+    .catch(error => {});
 }
 
 // Script para 5 clicks en el logo redirige a caja chica

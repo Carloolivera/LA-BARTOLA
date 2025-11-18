@@ -517,14 +517,6 @@
 </div>
 
 <script>
-// Modo debug: cambiar a false en producción para mejorar velocidad
-const DEBUG_MODE = false;
-
-// Función helper para logs condicionales
-function debugLog(...args) {
-    if (DEBUG_MODE) console.log(...args);
-}
-
 // Variable global para el callback del modal de confirmación
 let modalConfirmarCallback = null;
 
@@ -673,7 +665,6 @@ function cambiarEstado(key, pedidoId, event) {
         event.preventDefault();
     }
 
-    debugLog('Cambiar estado - Key:', key, 'PedidoID:', pedidoId);
 
     const estados = [
         { value: 'pendiente', label: '🟡 Pendiente' },
@@ -725,9 +716,7 @@ function imprimir(pedidoId, event) {
         event.stopPropagation();
         event.preventDefault();
     }
-    debugLog('Imprimir pedido:', pedidoId);
     const url = '<?= site_url("admin/pedidos/imprimir") ?>/' + pedidoId;
-    debugLog('URL:', url);
     window.open(url, '_blank');
 }
 
@@ -737,7 +726,6 @@ function editarPedido(key, event) {
         event.stopPropagation();
         event.preventDefault();
     }
-    debugLog('Editar pedido - Key:', key);
     const card = document.querySelector(`[data-pedido-key="${key}"]`);
     const items = card.querySelectorAll('.pedido-item');
 
@@ -932,7 +920,6 @@ function eliminarPedido(pedidoId, event) {
         event.stopPropagation();
         event.preventDefault();
     }
-    debugLog('Eliminar pedido:', pedidoId);
 
     // Mostrar modal de confirmación personalizado
     mostrarModalConfirmar(
