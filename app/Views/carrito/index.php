@@ -663,6 +663,17 @@
         <textarea class="form-input" id="comentarios" placeholder="Timbre, piso, apartamento, etc. (opcional)"></textarea>
       </div>
 
+      <div class="form-group">
+        <label class="form-label">Forma de Pago *</label>
+        <select class="form-input" id="formaPago" required>
+          <option value="">Seleccionar método de pago</option>
+          <option value="efectivo">💵 Efectivo</option>
+          <option value="mercado_pago">💳 Mercado Pago</option>
+          <option value="transferencia">🏦 Transferencia</option>
+          <option value="qr">📱 QR</option>
+        </select>
+      </div>
+
       <div class="order-summary-box">
         <div class="order-summary-item">
           <span>Subtotal:</span>
@@ -969,9 +980,15 @@
     const domicilio = document.getElementById('domicilio').value.trim();
     const entreCalles = document.getElementById('entreCalles').value.trim();
     const comentarios = document.getElementById('comentarios').value.trim();
+    const formaPago = document.getElementById('formaPago').value;
 
     if (!nombre || !domicilio) {
       showNotification('Por favor completa tu nombre y domicilio', 'warning');
+      return;
+    }
+
+    if (!formaPago) {
+      showNotification('Por favor selecciona una forma de pago', 'warning');
       return;
     }
 
@@ -983,7 +1000,7 @@
       formData.append('nombre_cliente', nombre);
       formData.append('tipo_entrega', 'delivery');
       formData.append('direccion', domicilio);
-      formData.append('forma_pago', 'efectivo');
+      formData.append('forma_pago', formaPago);
       formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
 
       // Agregar comentarios adicionales
@@ -1041,6 +1058,16 @@
       if (comentarios) {
         mensaje += `💬 *Comentarios:* ${comentarios}\n`;
       }
+
+      // Agregar forma de pago con emoji correspondiente
+      const formasPagoTexto = {
+        'efectivo': '💵 Efectivo',
+        'mercado_pago': '💳 Mercado Pago',
+        'transferencia': '🏦 Transferencia',
+        'qr': '📱 QR'
+      };
+      mensaje += `💰 *Forma de Pago:* ${formasPagoTexto[formaPago] || formaPago}\n`;
+
       mensaje += `\n*📋 DETALLE DEL PEDIDO:*\n`;
       mensaje += `━━━━━━━━━━━━━━━━\n`;
 
