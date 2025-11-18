@@ -100,13 +100,6 @@ Options -Indexes
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 </IfModule>
 
-# Protect uploaded files from being executed
-<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$">
-    <IfModule mod_alias.c>
-        Redirect 404 /
-    </IfModule>
-</FilesMatch>
-
 # Limit file upload size (if possible via .htaccess)
 <IfModule mod_php.c>
     php_value upload_max_filesize 50M

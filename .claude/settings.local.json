@@ -53,7 +53,9 @@
       "Bash(git fetch:*)",
       "Bash(git merge:*)",
       "Bash(gh pr list:*)",
-      "Bash(del \"c:\\Dev\\labartola\\add_cliente.sql\" \"c:\\Dev\\labartola\\add_cliente_group.php\" \"c:\\Dev\\labartola\\labartola (1).sql\" \"c:\\Dev\\labartola\\builds\" \"c:\\Dev\\labartola\\agents.md\")"
+      "Bash(del \"c:\\Dev\\labartola\\add_cliente.sql\" \"c:\\Dev\\labartola\\add_cliente_group.php\" \"c:\\Dev\\labartola\\labartola (1).sql\" \"c:\\Dev\\labartola\\builds\" \"c:\\Dev\\labartola\\agents.md\")",
+      "Bash(cat:*)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []

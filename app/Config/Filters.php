@@ -51,7 +51,7 @@ class Filters extends BaseFilters
             // 'csrf', // CSRF se maneja por ruta específica
         ],
         'after' => [
-            'toolbar',
+            // 'toolbar', // DESACTIVADO - Causa lentitud de 3-5 segundos
             'secureheaders',
             // 'honeypot',
         ],
