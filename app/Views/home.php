@@ -138,11 +138,11 @@
             <div class="plato-price">$<?= number_format($plato['precio'], 0, ',', '.') ?></div>
           </div>
 
-          <div class="add-btn" id="add-btn-<?= $plato['id'] ?>" onclick="addToCart(<?= $plato['id'] ?>, '<?= addslashes(esc($plato['nombre'])) ?>', <?= $plato['precio'] ?>)">
+          <div class="add-btn" id="add-btn-<?= $plato['id'] ?>" onclick="addToCart(<?= $plato['id'] ?>, '<?= addslashes(esc($plato['nombre'])) ?>', <?= $plato['precio'] ?>, <?= $plato['stock'] ?? 999 ?>)">
             +
           </div>
 
-          <div class="quantity-controls" id="controls-<?= $plato['id'] ?>" data-plato-id="<?= $plato['id'] ?>">
+          <div class="quantity-controls" id="controls-<?= $plato['id'] ?>" data-plato-id="<?= $plato['id'] ?>" data-stock="<?= $plato['stock'] ?? 999 ?>">
             <div class="quantity-btn" onclick="changeQuantity(<?= $plato['id'] ?>, -1)">-</div>
             <div class="quantity-display" id="qty-<?= $plato['id'] ?>">0</div>
             <div class="quantity-btn" onclick="changeQuantity(<?= $plato['id'] ?>, 1)">+</div>

@@ -986,6 +986,65 @@ function mostrarNotificacion(mensaje, tipo) {
     document.body.appendChild(notif);
     setTimeout(() => notif.remove(), 3000);
 }
+
+// Auto-refresh cada 30 segundos para detectar nuevos pedidos
+let autoRefreshInterval = null;
+let ultimoHash = location.href + document.querySelector('.container-fluid').innerHTML.length;
+
+function iniciarAutoRefresh() {
+    // Refrescar cada 30 segundos
+    autoRefreshInterval = setInterval(() => {
+        // Solo refrescar si no hay modales abiertos
+        const modalAbierto = document.querySelector('.modal-editar.active');
+        if (modalAbierto) {
+            return; // No refrescar si hay un modal abierto
+        }
+
+        // Verificar cambios sin hacer scroll
+        fetch(window.location.href, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            // Extraer solo el contenido de pedidos
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const nuevoContenido = doc.querySelector('.container-fluid');
+
+            if (nuevoContenido) {
+                const nuevoHash = window.location.href + nuevoContenido.innerHTML.length;
+
+                // Solo recargar si hay cambios
+                if (nuevoHash !== ultimoHash) {
+                    console.log('Nuevos pedidos detectados, recargando...');
+
+                    // Guardar posición del scroll
+                    const scrollPos = window.scrollY;
+
+                    // Recargar
+                    location.reload();
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error al verificar actualizaciones:', error);
+        });
+    }, 30000); // 30 segundos
+
+    console.log('Auto-refresh activado (cada 30 segundos)');
+}
+
+// Iniciar auto-refresh al cargar la página
+iniciarAutoRefresh();
+
+// Detener auto-refresh si el usuario sale de la página
+window.addEventListener('beforeunload', () => {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+});
 </script>
 
 </section>

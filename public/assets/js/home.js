@@ -9,7 +9,7 @@ function toggleCategory(header) {
 }
 
 // Agregar al carrito
-function addToCart(platoId, platoNombre, platoPrecio) {
+function addToCart(platoId, platoNombre, platoPrecio, stock) {
   const addBtn = document.getElementById(`add-btn-${platoId}`);
   const controls = document.getElementById(`controls-${platoId}`);
 
@@ -22,7 +22,8 @@ function addToCart(platoId, platoNombre, platoPrecio) {
     cart[platoId] = {
       nombre: platoNombre,
       precio: platoPrecio,
-      cantidad: 0
+      cantidad: 0,
+      stock: stock
     };
   }
 
@@ -34,7 +35,26 @@ function addToCart(platoId, platoNombre, platoPrecio) {
 function changeQuantity(platoId, delta) {
   if (!cart[platoId]) return;
 
-  cart[platoId].cantidad += delta;
+  const controls = document.getElementById(`controls-${platoId}`);
+  const stock = parseInt(controls.dataset.stock);
+  const nuevaCantidad = cart[platoId].cantidad + delta;
+
+  // Validar stock
+  if (delta > 0 && nuevaCantidad > stock) {
+    // Mostrar mensaje de stock insuficiente
+    const qtyDisplay = document.getElementById(`qty-${platoId}`);
+    qtyDisplay.style.color = '#dc3545';
+    qtyDisplay.textContent = 'Max: ' + stock;
+
+    setTimeout(() => {
+      qtyDisplay.style.color = '';
+      qtyDisplay.textContent = cart[platoId].cantidad;
+    }, 1500);
+
+    return; // No permitir agregar más
+  }
+
+  cart[platoId].cantidad = nuevaCantidad;
 
   if (cart[platoId].cantidad <= 0) {
     delete cart[platoId];
