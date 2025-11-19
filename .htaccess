@@ -9,11 +9,16 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Redirigir al index de /public si se accede a la raíz
-    RewriteRule ^$ public/ [L]
+    # Si el archivo existe en public/, servirlo directamente
+    RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f
+    RewriteRule ^(.*)$ public/$1 [L]
 
-    # Redirigir todo lo demás a /public excepto lo que ya está ahí
-    RewriteRule ^((?!public/).*)$ public/$1 [L,NC]
+    # Si el directorio existe en public/, servirlo directamente
+    RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -d
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    # Para todo lo demás, pasar a index.php de CodeIgniter
+    RewriteRule ^(.*)$ public/index.php/$1 [L]
 </IfModule>
 
 # =====================================================
