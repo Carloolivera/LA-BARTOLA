@@ -989,27 +989,50 @@ function cerrarModalEditar() {
 
 // Funciones del modal de confirmación
 function mostrarModalConfirmar(titulo, mensaje, callback) {
-    document.getElementById('modalConfirmarTitulo').textContent = titulo;
-    document.getElementById('modalConfirmarMensaje').textContent = mensaje;
+    console.log('📋 mostrarModalConfirmar - Título:', titulo);
+    console.log('📋 mostrarModalConfirmar - Mensaje:', mensaje);
+
+    const modalTitulo = document.getElementById('modalConfirmarTitulo');
+    const modalMensaje = document.getElementById('modalConfirmarMensaje');
+    const botonConfirmar = document.getElementById('modalConfirmarBoton');
+    const modal = document.getElementById('modalConfirmar');
+
+    if (!modalTitulo || !modalMensaje || !botonConfirmar || !modal) {
+        console.error('❌ ERROR: Elementos del modal no encontrados');
+        console.log('modalTitulo:', modalTitulo);
+        console.log('modalMensaje:', modalMensaje);
+        console.log('botonConfirmar:', botonConfirmar);
+        console.log('modal:', modal);
+        return;
+    }
+
+    modalTitulo.textContent = titulo;
+    modalMensaje.textContent = mensaje;
 
     // Guardar el callback
     modalConfirmarCallback = callback;
+    console.log('✅ Callback guardado:', typeof callback);
 
     // Asignar el evento al botón de confirmar
-    const botonConfirmar = document.getElementById('modalConfirmarBoton');
     botonConfirmar.onclick = function() {
+        console.log('🔘 BOTÓN CONFIRMAR CLICKEADO');
         cerrarModalConfirmar();
         if (modalConfirmarCallback) {
+            console.log('🚀 Ejecutando callback...');
             modalConfirmarCallback();
             modalConfirmarCallback = null;
+        } else {
+            console.error('❌ No hay callback para ejecutar');
         }
     };
 
     // Mostrar el modal
-    document.getElementById('modalConfirmar').classList.add('active');
+    modal.classList.add('active');
+    console.log('✅ Modal mostrado - classList:', modal.classList);
 }
 
 function cerrarModalConfirmar() {
+    console.log('🚪 Cerrando modal confirmación');
     document.getElementById('modalConfirmar').classList.remove('active');
     modalConfirmarCallback = null;
 }
