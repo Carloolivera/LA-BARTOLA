@@ -615,8 +615,8 @@
 </div>
 
 <!-- Modal de confirmación de eliminación -->
-<div class="delete-modal" id="deleteModal">
-  <div class="delete-modal-content">
+<div class="delete-modal" id="deleteModal" onclick="event.target === this && closeDeleteModal()">
+  <div class="delete-modal-content" onclick="event.stopPropagation()">
     <div class="delete-modal-icon">
       <i class="bi bi-trash"></i>
     </div>
@@ -900,58 +900,122 @@
 
   // Mostrar modal de eliminación
   function showDeleteModal(platoId, platoNombre) {
+    console.log('=== SHOW DELETE MODAL ===');
+    console.log('Plato ID recibido:', platoId, 'Tipo:', typeof platoId);
+
+    // Asegurarnos de que el ID sea un número o string válido
     deleteTargetId = platoId;
+
+    console.log('deleteTargetId después de asignar:', deleteTargetId);
+    console.log('Plato nombre:', platoNombre);
+
     document.getElementById('deleteModalText').textContent = `¿Eliminar "${platoNombre}"?`;
     document.getElementById('deleteModal').classList.add('active');
+
+    console.log('Modal activado. deleteTargetId final:', deleteTargetId);
   }
 
   // Cerrar modal de eliminación
   function closeDeleteModal() {
-    deleteTargetId = null;
+    console.log('=== CLOSE DELETE MODAL ===');
+    console.log('deleteTargetId antes de cerrar:', deleteTargetId);
     document.getElementById('deleteModal').classList.remove('active');
+    // Limpiamos deleteTargetId solo si se cancela
+    // confirmDelete() lo limpiará después de usarlo
+    setTimeout(() => {
+      if (document.getElementById('deleteModal').classList.contains('active') === false) {
+        console.log('Modal cerrado - limpiando deleteTargetId');
+        deleteTargetId = null;
+      }
+    }, 100);
   }
 
   // Confirmar eliminación
-  function confirmDelete() {
-    if (!deleteTargetId) return;
+  async function confirmDelete() {
+    console.log('=== CONFIRM DELETE ===');
+    console.log('deleteTargetId al inicio:', deleteTargetId);
 
+    // Guardar el ID INMEDIATAMENTE
+    const platoIdAEliminar = deleteTargetId;
+
+    console.log('platoIdAEliminar copiado:', platoIdAEliminar);
+
+    if (!platoIdAEliminar) {
+      console.error('ERROR: No hay deleteTargetId válido');
+      alert('Error: No se pudo identificar el producto a eliminar. Por favor recarga la página.');
+      closeDeleteModal();
+      deleteTargetId = null; // Limpiar ahora
+      return;
+    }
+
+    console.log('Procediendo a eliminar plato ID:', platoIdAEliminar);
+    console.log('Carrito actual:', carritoItems);
+
+    // Cerrar modal AHORA
     closeDeleteModal();
+    // Limpiar la variable DESPUÉS de usarla
+    deleteTargetId = null;
+
     showLoading();
 
     // Eliminar de cambios pendientes si existe
-    if (cambiosPendientes[deleteTargetId]) {
-      delete cambiosPendientes[deleteTargetId];
+    if (cambiosPendientes[platoIdAEliminar]) {
+      delete cambiosPendientes[platoIdAEliminar];
     }
 
     // Eliminar del carrito en memoria
-    if (carritoItems[deleteTargetId]) {
-      delete carritoItems[deleteTargetId];
+    if (carritoItems[platoIdAEliminar]) {
+      delete carritoItems[platoIdAEliminar];
     }
 
-    const formData = new FormData();
-    formData.append('plato_id', deleteTargetId);
+    try {
+      const formData = new FormData();
+      formData.append('plato_id', platoIdAEliminar);
 
-    fetch('<?= site_url('carrito/eliminar') ?>', {
-      method: 'POST',
-      body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
+      console.log('=== ENVIANDO REQUEST ===');
+      console.log('plato_id que se enviará:', platoIdAEliminar);
+      console.log('Tipo de plato_id:', typeof platoIdAEliminar);
+      console.log('FormData creado. Contenido:');
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
+      }
+
+      const response = await fetch('<?= site_url('carrito/eliminar') ?>', {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin' // Asegurar que se envían las cookies de sesión
+      });
+
+      console.log('Response status:', response.status);
+      const responseText = await response.text();
+      console.log('Response text:', responseText);
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Error parseando JSON:', e);
+        hideLoading();
+        showNotification('Error en la respuesta del servidor', 'error');
+        return;
+      }
+
       hideLoading();
+
       if (data.success) {
         showNotification('Producto eliminado correctamente', 'success');
         setTimeout(() => location.reload(), 1000);
       } else {
+        console.error('Error del servidor:', data.message);
         showNotification(data.message || 'Error al eliminar producto', 'error');
         setTimeout(() => location.reload(), 2000);
       }
-    })
-    .catch(error => {
+    } catch (error) {
       hideLoading();
-      console.error('Error:', error);
-      showNotification('Error al eliminar producto', 'error');
+      console.error('Error en la petición:', error);
+      showNotification('Error al eliminar producto: ' + error.message, 'error');
       setTimeout(() => location.reload(), 2000);
-    });
+    }
   }
 
   // Mostrar modal de pedido

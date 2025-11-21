@@ -172,7 +172,18 @@
                                             <?= date('d/m/Y', strtotime($mov['fecha'])) ?>
                                         </td>
                                         <td class="small text-light"><?= date('H:i', strtotime($mov['hora'])) ?></td>
-                                        <td class="small text-light"><?= esc($mov['concepto']) ?></td>
+                                        <td class="small text-light">
+                                            <?= esc($mov['concepto']) ?>
+                                            <?php if (!empty($mov['es_digital']) && $mov['es_digital'] == 1): ?>
+                                                <span class="badge bg-info text-dark ms-1" style="font-size: 0.7rem;">
+                                                    <i class="bi bi-phone"></i> Digital
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="badge bg-success ms-1" style="font-size: 0.7rem;">
+                                                    <i class="bi bi-cash"></i> Efectivo
+                                                </span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td class="text-end fw-bold" style="color: #28a745;">
                                             <?= $mov['tipo'] === 'entrada' ? '$' . number_format($mov['monto'], 2) : '-' ?>
                                         </td>
@@ -184,17 +195,16 @@
                                         </td>
                                         <?php if ($esHoy): ?>
                                         <td class="text-center">
-                                            <a href="<?= base_url('admin/caja-chica/editar/' . $mov['id']) ?>"
-                                               class="btn btn-sm btn-outline-warning me-1"
-                                               title="Editar">
+                                            <button onclick="confirmarEditar(<?= $mov['id'] ?>)"
+                                                    class="btn btn-sm btn-warning me-1"
+                                                    title="Editar">
                                                 <i class="bi bi-pencil"></i>
-                                            </a>
-                                            <a href="<?= base_url('admin/caja-chica/eliminar/' . $mov['id']) ?>"
-                                               onclick="return confirm('¿Eliminar este movimiento?')"
-                                               class="btn btn-sm btn-outline-danger"
-                                               title="Eliminar">
+                                            </button>
+                                            <button onclick="confirmarEliminar(<?= $mov['id'] ?>, '<?= addslashes(esc($mov['concepto'])) ?>')"
+                                                    class="btn btn-sm btn-danger"
+                                                    title="Eliminar">
                                                 <i class="bi bi-trash"></i>
-                                            </a>
+                                            </button>
                                         </td>
                                         <?php endif; ?>
                                     </tr>
@@ -220,6 +230,53 @@
     </div>
 </section>
 
+<!-- Modal de Confirmación para Eliminar -->
+<div class="modal fade" id="modalEliminar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light" style="border: 2px solid #D4B68A;">
+            <div class="modal-header" style="border-bottom: 1px solid #D4B68A;">
+                <h5 class="modal-title" style="color: #D4B68A;">
+                    <i class="bi bi-exclamation-triangle"></i> Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">¿Estás seguro de que deseas eliminar este movimiento?</p>
+                <p class="text-warning mt-2 mb-0" id="conceptoEliminar"></p>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid #D4B68A;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <a href="#" id="btnConfirmarEliminar" class="btn btn-danger">
+                    <i class="bi bi-trash"></i> Eliminar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación para Editar -->
+<div class="modal fade" id="modalEditar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light" style="border: 2px solid #D4B68A;">
+            <div class="modal-header" style="border-bottom: 1px solid #D4B68A;">
+                <h5 class="modal-title" style="color: #D4B68A;">
+                    <i class="bi bi-pencil"></i> Confirmar Edición
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">¿Deseas editar este movimiento?</p>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid #D4B68A;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <a href="#" id="btnConfirmarEditar" class="btn btn-warning">
+                    <i class="bi bi-pencil"></i> Editar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // Actualizar hora automáticamente
 function actualizarHora() {
@@ -232,6 +289,21 @@ function actualizarHora() {
     if (inputHora) {
         inputHora.value = horaActual;
     }
+}
+
+// Confirmar eliminación de movimiento
+function confirmarEliminar(id, concepto) {
+    document.getElementById('conceptoEliminar').textContent = concepto;
+    document.getElementById('btnConfirmarEliminar').href = '<?= base_url('admin/caja-chica/eliminar/') ?>' + id;
+    const modal = new bootstrap.Modal(document.getElementById('modalEliminar'));
+    modal.show();
+}
+
+// Confirmar edición de movimiento
+function confirmarEditar(id) {
+    document.getElementById('btnConfirmarEditar').href = '<?= base_url('admin/caja-chica/editar/') ?>' + id;
+    const modal = new bootstrap.Modal(document.getElementById('modalEditar'));
+    modal.show();
 }
 
 // Actualizar fecha y hora al cargar la página

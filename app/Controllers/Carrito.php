@@ -171,11 +171,18 @@ class Carrito extends Controller
         try {
             $plato_id = $this->request->getPost('plato_id');
 
+            log_message('info', 'Carrito::eliminar - Plato ID recibido: ' . $plato_id);
+
             $carrito = $this->session->get('carrito') ?? [];
+
+            log_message('info', 'Carrito::eliminar - Carrito actual: ' . json_encode($carrito));
+            log_message('info', 'Carrito::eliminar - Session ID: ' . session_id());
 
             if (isset($carrito[$plato_id])) {
                 unset($carrito[$plato_id]);
                 $this->session->set('carrito', $carrito);
+
+                log_message('info', 'Carrito::eliminar - Plato eliminado correctamente');
 
                 return $this->response->setJSON([
                     'success' => true,
@@ -183,9 +190,11 @@ class Carrito extends Controller
                 ]);
             }
 
+            log_message('warning', 'Carrito::eliminar - Plato no encontrado. IDs en carrito: ' . implode(', ', array_keys($carrito)));
+
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Plato no encontrado en el carrito'
+                'message' => 'Plato no encontrado en el carrito. ID buscado: ' . $plato_id . ', IDs en carrito: ' . implode(', ', array_keys($carrito))
             ]);
         } catch (\Exception $e) {
             log_message('error', 'Error en Carrito::eliminar - ' . $e->getMessage());

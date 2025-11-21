@@ -61,12 +61,13 @@ class CajaChica extends BaseController
         }
 
         $data = [
-            'fecha'    => $this->request->getPost('fecha'),
-            'hora'     => $this->request->getPost('hora'),
-            'concepto' => $this->request->getPost('concepto'),
-            'tipo'     => $this->request->getPost('tipo'),
-            'monto'    => $this->request->getPost('monto'),
-            'user_id'  => auth()->id(),
+            'fecha'      => $this->request->getPost('fecha'),
+            'hora'       => $this->request->getPost('hora'),
+            'concepto'   => $this->request->getPost('concepto'),
+            'tipo'       => $this->request->getPost('tipo'),
+            'monto'      => $this->request->getPost('monto'),
+            'es_digital' => $this->request->getPost('es_digital') ? 1 : 0,
+            'user_id'    => auth()->id(),
         ];
 
         if ($this->cajaModel->save($data)) {
@@ -92,11 +93,12 @@ class CajaChica extends BaseController
 
         if ($this->request->is('post')) {
             $data = [
-                'fecha'    => $this->request->getPost('fecha'),
-                'hora'     => $this->request->getPost('hora'),
-                'concepto' => $this->request->getPost('concepto'),
-                'tipo'     => $this->request->getPost('tipo'),
-                'monto'    => $this->request->getPost('monto'),
+                'fecha'      => $this->request->getPost('fecha'),
+                'hora'       => $this->request->getPost('hora'),
+                'concepto'   => $this->request->getPost('concepto'),
+                'tipo'       => $this->request->getPost('tipo'),
+                'monto'      => $this->request->getPost('monto'),
+                'es_digital' => $this->request->getPost('es_digital') ? 1 : 0,
             ];
 
             if ($this->cajaModel->update($id, $data)) {

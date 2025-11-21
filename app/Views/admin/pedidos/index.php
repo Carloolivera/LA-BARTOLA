@@ -901,16 +901,27 @@ function guardarEdicion(key) {
     mostrarNotificacion('Cambios guardados', 'success');
 }
 
-// Eliminar item
+// Eliminar item individual (un solo plato del pedido)
 function eliminarItem(itemId) {
-    fetch('<?= site_url("admin/pedidos/eliminar") ?>/' + itemId, {
-        method: 'POST'
+    fetch('<?= site_url("admin/pedidos/actualizarItem") ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `item_id=${itemId}&cantidad=0`
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            location.reload();
+            mostrarNotificacion('Plato eliminado del pedido', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            mostrarNotificacion(data.message || 'Error al eliminar plato', 'error');
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        mostrarNotificacion('Error al eliminar plato', 'error');
     });
 }
 
@@ -921,27 +932,45 @@ function eliminarPedido(pedidoId, event) {
         event.preventDefault();
     }
 
+    console.log('Intentando eliminar pedido ID:', pedidoId);
+
     // Mostrar modal de confirmación personalizado
     mostrarModalConfirmar(
         '¿Eliminar pedido?',
         '¿Estás seguro de que deseas eliminar todo el pedido? Esta acción no se puede deshacer.',
         () => {
             // Callback cuando se confirma
-            fetch('<?= site_url("admin/pedidos/eliminar") ?>/' + pedidoId, {
-                method: 'POST'
+            const url = '<?= site_url("admin/pedidos/eliminar") ?>/' + pedidoId;
+            console.log('URL de eliminación:', url);
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Status response:', response.status);
+                if (!response.ok) {
+                    throw new Error('Error HTTP: ' + response.status);
+                }
+                return response.json();
+            })
             .then(data => {
+                console.log('Respuesta del servidor:', data);
                 if (data.success) {
                     mostrarNotificacion('Pedido eliminado correctamente', 'success');
                     setTimeout(() => location.reload(), 1000);
                 } else {
                     mostrarNotificacion(data.message || 'Error al eliminar pedido', 'error');
+                    console.error('Error al eliminar:', data);
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                mostrarNotificacion('Error al eliminar pedido', 'error');
+                console.error('Error completo:', error);
+                mostrarNotificacion('Error al eliminar pedido: ' + error.message, 'error');
             });
         }
     );

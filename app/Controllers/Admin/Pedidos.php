@@ -199,20 +199,80 @@ class Pedidos extends BaseController
 
     public function eliminar($id)
     {
+        // Establecer header JSON
+        $this->response->setContentType('application/json');
+
         // Verificar que sea admin
         if (!auth()->user()->inGroup('admin')) {
+            log_message('warning', 'Pedidos::eliminar - Acceso denegado para usuario no admin');
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Acceso denegado'
-            ]);
+            ])->setStatusCode(403);
         }
 
-        $this->db->table('pedidos')->where('id', $id)->delete();
+        log_message('info', 'Pedidos::eliminar - Intentando eliminar pedido ID: ' . $id);
 
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => 'Pedido eliminado correctamente'
-        ]);
+        try {
+            // Obtener el pedido para identificar el grupo
+            $pedido = $this->db->table('pedidos')->where('id', $id)->get()->getRowArray();
+
+            if (!$pedido) {
+                log_message('error', 'Pedidos::eliminar - Pedido no encontrado ID: ' . $id);
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Pedido no encontrado'
+                ])->setStatusCode(404);
+            }
+
+            // Extraer información del pedido
+            $info = $this->extraerInfoPedido($pedido['notas']);
+            $nombreCliente = $info['nombre_cliente'];
+            $fechaPedido = $pedido['created_at'];
+
+            log_message('info', 'Pedidos::eliminar - Cliente: ' . $nombreCliente . ', Fecha: ' . $fechaPedido);
+
+            // Obtener TODOS los pedidos del mismo grupo antes de eliminar (para devolver stock)
+            $pedidosDelGrupo = $this->db->table('pedidos as p')
+                ->select('p.*, pl.stock, pl.stock_ilimitado')
+                ->join('platos as pl', 'pl.id = p.plato_id', 'left')
+                ->like('p.notas', "A nombre de: {$nombreCliente}")
+                ->where('p.created_at', $fechaPedido)
+                ->get()
+                ->getResultArray();
+
+            $cantidadPedidos = count($pedidosDelGrupo);
+
+            log_message('info', 'Pedidos::eliminar - Se eliminarán ' . $cantidadPedidos . ' pedidos y se devolverá el stock');
+
+            // Devolver stock a cada plato SOLO si el pedido estaba completado
+            foreach ($pedidosDelGrupo as $ped) {
+                if ($ped['estado'] === 'completado' && $ped['plato_id']) {
+                    $this->devolverStock($ped['plato_id'], $ped['cantidad']);
+                    log_message('info', 'Pedidos::eliminar - Stock devuelto para plato ID: ' . $ped['plato_id'] . ', cantidad: ' . $ped['cantidad']);
+                }
+            }
+
+            // Eliminar TODOS los pedidos del mismo grupo
+            $this->db->table('pedidos')
+                ->like('notas', "A nombre de: {$nombreCliente}")
+                ->where('created_at', $fechaPedido)
+                ->delete();
+
+            log_message('info', 'Pedidos::eliminar - Pedidos eliminados correctamente');
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Pedido eliminado correctamente (' . $cantidadPedidos . ' items)'
+            ])->setStatusCode(200);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Pedidos::eliminar - Excepción: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al eliminar pedido: ' . $e->getMessage()
+            ])->setStatusCode(500);
+        }
     }
 
     public function actualizarItem()
@@ -269,11 +329,37 @@ class Pedidos extends BaseController
 
         // Verificar stock (solo si no es ilimitado)
         if ($plato['stock_ilimitado'] == 0) {
-            if ($cantidad > $plato['stock']) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => "Stock insuficiente. Disponible: {$plato['stock']} unidad(es)"
-                ]);
+            // Si el pedido NO está completado, el stock no ha sido descontado todavía
+            // Entonces podemos usar toda la cantidad disponible
+            if ($pedido['estado'] !== 'completado') {
+                if ($cantidad > $plato['stock']) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => "Stock insuficiente. Disponible: {$plato['stock']} unidad(es)",
+                        'stock_disponible' => $plato['stock']
+                    ]);
+                }
+            } else {
+                // Si el pedido YA está completado, el stock ya fue descontado
+                // Necesitamos considerar la cantidad actual del pedido
+                $cantidadActual = $pedido['cantidad'];
+                $diferenciaStock = $cantidad - $cantidadActual;
+
+                // Si queremos AUMENTAR la cantidad, verificar que haya stock disponible
+                if ($diferenciaStock > 0) {
+                    if ($diferenciaStock > $plato['stock']) {
+                        return $this->response->setJSON([
+                            'success' => false,
+                            'message' => "Stock insuficiente. Solo puedes agregar {$plato['stock']} unidad(es) más",
+                            'stock_disponible' => $plato['stock']
+                        ]);
+                    }
+                    // Descontar del stock la diferencia
+                    $this->descontarStock($pedido['plato_id'], $diferenciaStock);
+                } elseif ($diferenciaStock < 0) {
+                    // Si queremos REDUCIR la cantidad, devolver al stock la diferencia
+                    $this->devolverStock($pedido['plato_id'], abs($diferenciaStock));
+                }
             }
         }
 
@@ -380,10 +466,16 @@ class Pedidos extends BaseController
             ->get()
             ->getRowArray();
 
+        log_message('info', 'agregarPlato - Buscando plato existente. Plato ID: ' . $platoId . ', Cliente: ' . $nombreCliente);
+        log_message('info', 'agregarPlato - Plato ya existe: ' . ($platoYaExiste ? 'SI (ID: ' . $platoYaExiste['id'] . ', Cantidad actual: ' . $platoYaExiste['cantidad'] . ')' : 'NO'));
+
         if ($platoYaExiste) {
             // Si ya existe, actualizar la cantidad en lugar de crear un nuevo registro
-            $nuevaCantidad = $platoYaExiste['cantidad'] + $cantidad;
+            $cantidadAnterior = $platoYaExiste['cantidad'];
+            $nuevaCantidad = $cantidadAnterior + $cantidad;
             $nuevoTotal = $plato['precio'] * $nuevaCantidad;
+
+            log_message('info', 'agregarPlato - SUMANDO cantidad. Anterior: ' . $cantidadAnterior . ', Agregar: ' . $cantidad . ', Nueva: ' . $nuevaCantidad);
 
             $this->db->table('pedidos')
                 ->where('id', $platoYaExiste['id'])
@@ -391,7 +483,10 @@ class Pedidos extends BaseController
                     'cantidad' => $nuevaCantidad,
                     'total' => $nuevoTotal
                 ]);
+
+            log_message('info', 'agregarPlato - Plato actualizado correctamente');
         } else {
+            log_message('info', 'agregarPlato - Creando nuevo registro de pedido para el plato');
             // Crear nuevo registro en pedidos con los mismos datos del grupo
             $subtotal = $plato['precio'] * $cantidad;
 
@@ -520,12 +615,24 @@ class Pedidos extends BaseController
             $formaPago = strtolower($info['forma_pago'] ?? 'efectivo');
 
             // Determinar si es digital o efectivo
-            $esDigital = in_array($formaPago, ['qr', 'mercado_pago', 'mercadopago', 'tarjeta']) ? 1 : 0;
+            $esDigital = in_array($formaPago, ['qr', 'mercado_pago', 'mercadopago', 'tarjeta', 'transferencia']) ? 1 : 0;
 
-            // Preparar datos para caja chica
+            // Mapear formas de pago a nombres legibles
+            $formasPagoNombres = [
+                'qr' => 'QR',
+                'mercado_pago' => 'Mercado Pago',
+                'mercadopago' => 'Mercado Pago',
+                'tarjeta' => 'Tarjeta',
+                'transferencia' => 'Transferencia',
+                'efectivo' => 'Efectivo'
+            ];
+
+            $formaPagoTexto = $formasPagoNombres[$formaPago] ?? ucfirst($formaPago);
+
+            // Preparar datos para caja chica con el método de pago
             $concepto = $tipo === 'entrada'
-                ? "Pedido #{$pedido['id']} - {$nombreCliente}"
-                : "Devolución Pedido #{$pedido['id']} - {$nombreCliente}";
+                ? "Pedido #{$pedido['id']} - {$nombreCliente} ({$formaPagoTexto})"
+                : "Devolución Pedido #{$pedido['id']} - {$nombreCliente} ({$formaPagoTexto})";
 
             $datosMovimiento = [
                 'fecha' => date('Y-m-d'),
