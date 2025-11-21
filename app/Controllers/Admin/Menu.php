@@ -183,9 +183,17 @@ class Menu extends BaseController
         // Opcional: borrar archivo físico si existe
         $plato = $this->platoModel->find($id);
         if ($plato && ! empty($plato['imagen'])) {
-            $path = $this->uploadPath . DIRECTORY_SEPARATOR . $plato['imagen'];
-            if (is_file($path)) {
-                @unlink($path);
+            // VALIDAR contra Path Traversal: No permitir ../ ni /
+            $imagen = basename($plato['imagen']); // Solo el nombre del archivo, sin rutas
+
+            if (strpos($imagen, '..') !== false || strpos($imagen, '/') !== false || strpos($imagen, '\\') !== false) {
+                log_message('warning', 'Menu::eliminar - Intento de Path Traversal detectado: ' . $plato['imagen']);
+            } else {
+                $path = $this->uploadPath . DIRECTORY_SEPARATOR . $imagen;
+                if (is_file($path) && file_exists($path)) {
+                    @unlink($path);
+                    log_message('info', 'Menu::eliminar - Imagen eliminada: ' . $path);
+                }
             }
         }
 

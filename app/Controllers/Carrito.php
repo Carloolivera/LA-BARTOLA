@@ -258,69 +258,109 @@ class Carrito extends Controller
 
     $db = db_connect();
 
-    // Calcular total del carrito
-    $total = 0;
-    foreach ($carrito as $item) {
-        $subtotal = $item['precio'] * $item['cantidad'];
-        $total += $subtotal;
-    }
+    // INICIAR TRANSACCIÓN PARA GARANTIZAR INTEGRIDAD DE DATOS
+    $db->transStart();
 
-    // Construir notas del pedido
-    $notas = "A nombre de: {$nombre_cliente}\n";
-    $notas .= "Tipo de entrega: {$tipo_entrega}\n";
-    if ($tipo_entrega === 'delivery' && !empty($direccion)) {
-        $notas .= "Direccion: {$direccion}\n";
-    }
-    $notas .= "Forma de pago: {$forma_pago}\n";
+    try {
+        // Validar stock disponible ANTES de crear pedidos
+        foreach ($carrito as $plato_id => $item) {
+            $plato = $this->platoModel->find($plato_id);
 
-    // Crear un pedido por cada plato en el carrito
-    $primer_pedido_id = null;
-
-    foreach ($carrito as $plato_id => $item) {
-        $subtotal = $item['precio'] * $item['cantidad'];
-
-        $pedidoData = [
-            'usuario_id' => null,
-            'plato_id' => $plato_id,
-            'cantidad' => $item['cantidad'],
-            'total' => $subtotal,
-            'estado' => 'pendiente',
-            'tipo_entrega' => $tipo_entrega,
-            'direccion' => $direccion,
-            'forma_pago' => $forma_pago,
-            'notas' => $notas
-        ];
-
-        $pedido_id = $db->table('pedidos')->insert($pedidoData);
-
-        if (!$primer_pedido_id) {
-            $primer_pedido_id = $pedido_id;
-        }
-
-        // Descontar stock y marcar como no disponible si se agota
-        $plato = $this->platoModel->find($plato_id);
-
-        if ($plato && $plato['stock_ilimitado'] == 0) {
-            $nuevoStock = $plato['stock'] - $item['cantidad'];
-
-            // Si el stock llega a 0 o menos, marcar como no disponible
-            $updateData = ['stock' => max(0, $nuevoStock)];
-
-            if ($nuevoStock <= 0) {
-                $updateData['disponible'] = 0;
+            if (!$plato) {
+                $db->transRollback();
+                return redirect()->to('/carrito')->with('error', "El plato #{$plato_id} no existe");
             }
 
-            $this->platoModel->update($plato_id, $updateData);
-
-            // Limpiar caché de platos cuando cambia el stock
-            cache()->delete('platos_disponibles');
+            // Verificar stock SOLO si NO es ilimitado
+            if ($plato['stock_ilimitado'] == 0 && $plato['stock'] < $item['cantidad']) {
+                $db->transRollback();
+                return redirect()->to('/carrito')->with('error', "Stock insuficiente para {$plato['nombre']}. Disponible: {$plato['stock']}");
+            }
         }
+
+        // Calcular total del carrito (RECALCULAR EN SERVIDOR, NO CONFIAR EN CLIENTE)
+        $total = 0;
+        foreach ($carrito as $plato_id => $item) {
+            // OBTENER PRECIO DEL SERVIDOR, NO DEL CARRITO
+            $plato = $this->platoModel->find($plato_id);
+            $precioReal = $plato['precio'];
+            $subtotal = $precioReal * $item['cantidad'];
+            $total += $subtotal;
+        }
+
+        // Construir notas del pedido
+        $notas = "A nombre de: {$nombre_cliente}\n";
+        $notas .= "Tipo de entrega: {$tipo_entrega}\n";
+        if ($tipo_entrega === 'delivery' && !empty($direccion)) {
+            $notas .= "Direccion: {$direccion}\n";
+        }
+        $notas .= "Forma de pago: {$forma_pago}\n";
+
+        // Crear un pedido por cada plato en el carrito
+        $primer_pedido_id = null;
+
+        foreach ($carrito as $plato_id => $item) {
+            // OBTENER PRECIO REAL DEL SERVIDOR
+            $plato = $this->platoModel->find($plato_id);
+            $precioReal = $plato['precio'];
+            $subtotal = $precioReal * $item['cantidad'];
+
+            $pedidoData = [
+                'usuario_id' => null,
+                'plato_id' => $plato_id,
+                'cantidad' => $item['cantidad'],
+                'total' => $subtotal,
+                'estado' => 'pendiente',
+                'tipo_entrega' => $tipo_entrega,
+                'direccion' => $direccion,
+                'forma_pago' => $forma_pago,
+                'notas' => $notas
+            ];
+
+            $db->table('pedidos')->insert($pedidoData);
+            $pedido_id = $db->insertID();
+
+            if (!$primer_pedido_id) {
+                $primer_pedido_id = $pedido_id;
+            }
+
+            // Descontar stock y marcar como no disponible si se agota
+            if ($plato['stock_ilimitado'] == 0) {
+                $nuevoStock = $plato['stock'] - $item['cantidad'];
+
+                // Si el stock llega a 0 o menos, marcar como no disponible
+                $updateData = ['stock' => max(0, $nuevoStock)];
+
+                if ($nuevoStock <= 0) {
+                    $updateData['disponible'] = 0;
+                }
+
+                $this->platoModel->update($plato_id, $updateData);
+
+                // Limpiar caché de platos cuando cambia el stock
+                cache()->delete('platos_disponibles');
+            }
+        }
+
+        // COMPLETAR TRANSACCIÓN
+        $db->transComplete();
+
+        // Verificar si la transacción fue exitosa
+        if ($db->transStatus() === false) {
+            log_message('error', 'Carrito::finalizar - Error en transacción al crear pedido');
+            return redirect()->to('/carrito')->with('error', 'Error al procesar el pedido. Intente nuevamente.');
+        }
+
+        $pedido_id = $primer_pedido_id;
+
+        // Limpiar carrito de la sesión SOLO si todo fue exitoso
+        $this->session->remove('carrito');
+
+    } catch (\Exception $e) {
+        $db->transRollback();
+        log_message('error', 'Carrito::finalizar - Excepción: ' . $e->getMessage());
+        return redirect()->to('/carrito')->with('error', 'Error al procesar el pedido: ' . $e->getMessage());
     }
-
-    $pedido_id = $primer_pedido_id;
-
-    // Limpiar carrito de la sesión
-    $this->session->remove('carrito');
 
     // Si es una petición AJAX, devolver JSON
     if ($this->request->isAJAX() || $forma_pago === 'qr') {

@@ -34,7 +34,7 @@
             <div class="col-md-12">
               <div class="mb-3">
                 <label for="notas" class="form-label">Notas</label>
-                <textarea name="notas" id="notas" class="form-control bg-dark text-light" style="border-color: #d4af37;" rows="5"><?= $pedido['notas'] ?></textarea>
+                <textarea name="notas" id="notas" class="form-control bg-dark text-light" style="border-color: #d4af37;" rows="5"><?= esc($pedido['notas']) ?></textarea>
               </div>
             </div>
           </div>

@@ -60,7 +60,7 @@ nombre'] ?>"
         <div class="row">
           <div class="col-md-12">
             <h5 style="color: #D4B68A;">Notas del Pedido</h5>
-            <p style="white-space: pre-line;"><?= $pedido['notas'] ?></p>
+            <p style="white-space: pre-line;"><?= esc($pedido['notas'], 'html') ?></p>
           </div>
         </div>
 

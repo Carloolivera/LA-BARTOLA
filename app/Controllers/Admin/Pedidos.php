@@ -24,19 +24,22 @@ class Pedidos extends BaseController
             return redirect()->to('/')->with('error', 'Acceso denegado');
         }
 
-        // Obtener todos los pedidos con información del usuario y plato
+        // Obtener pedidos recientes con información del usuario y plato
+        // AGREGAR LIMIT para evitar cargar miles de pedidos
         $pedidos = $this->db->table('pedidos as p')
-            ->select('p.*, 
-                      u.username, 
+            ->select('p.*,
+                      u.username,
                       ai.secret as email,
-                      pl.nombre as plato_nombre, 
+                      pl.nombre as plato_nombre,
                       pl.precio,
                       pl.stock,
                       pl.stock_ilimitado')
             ->join('users as u', 'u.id = p.usuario_id', 'left')
             ->join('auth_identities as ai', 'ai.user_id = u.id AND ai.type = "email_password"', 'left')
             ->join('platos as pl', 'pl.id = p.plato_id', 'left')
+            ->orderBy('p.created_at', 'DESC')
             ->orderBy('p.id', 'DESC')
+            ->limit(500) // Solo los últimos 500 pedidos para rendimiento
             ->get()
             ->getResultArray();
 

@@ -21,11 +21,23 @@ class Categorias extends BaseController
     {
         $categorias = $this->categoriaModel->getTodas();
 
-        // Contar platos por categoría
+        // Contar platos por categoría EN UNA SOLA QUERY (evitar N+1)
+        $db = \Config\Database::connect();
+        $conteos = $db->table('platos')
+            ->select('categoria, COUNT(*) as total')
+            ->groupBy('categoria')
+            ->get()
+            ->getResultArray();
+
+        // Crear un mapa de conteos para acceso rápido
+        $mapaConteos = [];
+        foreach ($conteos as $row) {
+            $mapaConteos[$row['categoria']] = $row['total'];
+        }
+
+        // Asignar conteos a las categorías
         foreach ($categorias as &$cat) {
-            $cat['total_platos'] = $this->platoModel
-                ->where('categoria', $cat['nombre'])
-                ->countAllResults();
+            $cat['total_platos'] = $mapaConteos[$cat['nombre']] ?? 0;
         }
 
         return view('admin/categorias/index', ['categorias' => $categorias]);
