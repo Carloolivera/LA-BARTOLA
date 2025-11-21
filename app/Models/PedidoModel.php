@@ -18,16 +18,21 @@ class PedidoModel extends Model
         'cantidad',
         'estado',
         'total',
-        'notas'
+        'notas',
+        'tipo_entrega',  // Agregado
+        'direccion',     // Agregado
+        'forma_pago',    // Agregado
     ];
-    
+
     protected $useTimestamps = true;
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';
-    
+
     protected $validationRules = [
-        'usuario_id' => 'required|integer',
+        'usuario_id' => 'permit_empty|integer',  // Cambiado: permite NULL para pedidos públicos
         'plato_id' => 'required|integer',
         'cantidad' => 'required|integer|greater_than[0]',
+        'total' => 'required|decimal',  // Agregado
+        'estado' => 'permit_empty|in_list[pendiente,en_proceso,completado,cancelado]',  // Agregado
     ];
 }

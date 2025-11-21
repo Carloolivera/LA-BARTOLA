@@ -111,6 +111,7 @@ async function goToCart() {
 
   try {
     // Agregar todos los productos al carrito del servidor
+    let todosAgregados = true;
     for (const platoId in cart) {
       const item = cart[platoId];
 
@@ -125,11 +126,25 @@ async function goToCart() {
       });
 
       const data = await response.json();
+
+      // VERIFICAR que se agregó correctamente
+      if (!data.success) {
+        console.error('Error al agregar plato ID ' + platoId + ':', data.message);
+        todosAgregados = false;
+      }
     }
 
-    // Redirigir al carrito
-    window.location.href = carritoUrl;
+    // Solo redirigir si TODOS se agregaron correctamente
+    if (todosAgregados) {
+      window.location.href = carritoUrl;
+    } else {
+      alert('Algunos productos no pudieron agregarse al carrito. Por favor revise el stock disponible.');
+      cartFloat.style.opacity = '1';
+      cartFloat.style.pointerEvents = 'auto';
+    }
   } catch (error) {
+    console.error('Error en goToCart:', error);
+    alert('Error al agregar productos al carrito');
     cartFloat.style.opacity = '1';
     cartFloat.style.pointerEvents = 'auto';
   }

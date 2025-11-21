@@ -62,7 +62,9 @@
       "Bash(then grep -A2 \"baseURL\" .env)",
       "Bash(git mv:*)",
       "Bash(git reset:*)",
-      "Bash(docker compose logs:*)"
+      "Bash(docker compose logs:*)",
+      "Bash(docker compose exec:*)",
+      "Bash(docker compose:*)"
     ],
     "deny": [],
     "ask": []

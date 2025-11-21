@@ -60,8 +60,8 @@ class Menu extends BaseController
         // Reglas del lado servidor
         $rules = [
             'nombre'  => 'required|min_length[3]|max_length[255]',
-            'precio'  => 'required|numeric',
-            'imagen'  => 'uploaded[imagen]|is_image[imagen]',
+            'precio'  => 'required|decimal|greater_than[0]',  // Precio debe ser > 0
+            'imagen'  => 'uploaded[imagen]|is_image[imagen]|max_size[imagen,2048]',  // Max 2MB
             'stock'   => 'required|integer|greater_than_equal_to[0]',
         ];
 

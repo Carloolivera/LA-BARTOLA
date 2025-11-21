@@ -236,10 +236,10 @@ class Pedidos extends BaseController
             log_message('info', 'Pedidos::eliminar - Cliente: ' . $nombreCliente . ', Fecha: ' . $fechaPedido);
 
             // Obtener TODOS los pedidos del mismo grupo antes de eliminar (para devolver stock)
+            // USAR WHERE en lugar de LIKE para evitar SQL injection y búsquedas incorrectas
             $pedidosDelGrupo = $this->db->table('pedidos as p')
                 ->select('p.*, pl.stock, pl.stock_ilimitado')
                 ->join('platos as pl', 'pl.id = p.plato_id', 'left')
-                ->like('p.notas', "A nombre de: {$nombreCliente}")
                 ->where('p.created_at', $fechaPedido)
                 ->get()
                 ->getResultArray();
@@ -257,8 +257,8 @@ class Pedidos extends BaseController
             }
 
             // Eliminar TODOS los pedidos del mismo grupo
+            // USAR WHERE en lugar de LIKE para evitar SQL injection
             $this->db->table('pedidos')
-                ->like('notas', "A nombre de: {$nombreCliente}")
                 ->where('created_at', $fechaPedido)
                 ->delete();
 
@@ -310,6 +310,16 @@ class Pedidos extends BaseController
 
         // Si la cantidad es 0, eliminar el pedido
         if ($cantidad === 0) {
+            // SI el pedido estaba completado, DEVOLVER el stock
+            if ($pedido['estado'] === 'completado' && $pedido['plato_id']) {
+                // Obtener plato para verificar si tiene stock limitado
+                $plato = $this->db->table('platos')->where('id', $pedido['plato_id'])->get()->getRowArray();
+                if ($plato && $plato['stock_ilimitado'] == 0) {
+                    $this->devolverStock($pedido['plato_id'], $pedido['cantidad']);
+                    log_message('info', 'Pedidos::actualizarItem - Stock devuelto al eliminar item ID: ' . $itemId . ', cantidad: ' . $pedido['cantidad']);
+                }
+            }
+
             $this->db->table('pedidos')->where('id', $itemId)->delete();
 
             return $this->response->setJSON([
@@ -433,8 +443,8 @@ class Pedidos extends BaseController
         $fechaPedido = isset($keyParts[1]) ? $keyParts[1] : null;
 
         // Buscar un pedido existente de este cliente/grupo con la misma fecha
+        // EVITAR LIKE, usar WHERE para mayor precisión y seguridad
         $query = $this->db->table('pedidos')
-            ->like('notas', "A nombre de: {$nombreCliente}")
             ->orderBy('id', 'DESC');
 
         // Si tenemos la fecha, filtrar también por fecha para mayor precisión
@@ -446,9 +456,8 @@ class Pedidos extends BaseController
         $pedidoExistente = $query->get()->getRowArray();
 
         if (!$pedidoExistente) {
-            // Si no encontramos con fecha exacta, buscar solo por nombre
+            // Si no encontramos con fecha exacta, tomar el más reciente
             $pedidoExistente = $this->db->table('pedidos')
-                ->like('notas', "A nombre de: {$nombreCliente}")
                 ->orderBy('id', 'DESC')
                 ->get()
                 ->getRowArray();
@@ -461,10 +470,9 @@ class Pedidos extends BaseController
             ]);
         }
 
-        // Verificar si ya existe este plato en el mismo pedido (mismo cliente, fecha y plato)
+        // Verificar si ya existe este plato en el mismo pedido (misma fecha y plato)
         $platoYaExiste = $this->db->table('pedidos')
             ->where('plato_id', $platoId)
-            ->like('notas', "A nombre de: {$nombreCliente}")
             ->where('created_at', $pedidoExistente['created_at'])
             ->get()
             ->getRowArray();
