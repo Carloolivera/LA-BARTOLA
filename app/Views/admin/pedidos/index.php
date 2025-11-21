@@ -1016,13 +1016,16 @@ function mostrarModalConfirmar(titulo, mensaje, callback) {
     // Asignar el evento al botón de confirmar
     botonConfirmar.onclick = function() {
         console.log('🔘 BOTÓN CONFIRMAR CLICKEADO');
-        cerrarModalConfirmar();
+
+        // EJECUTAR CALLBACK ANTES DE CERRAR (para que no se pierda)
         if (modalConfirmarCallback) {
             console.log('🚀 Ejecutando callback...');
-            modalConfirmarCallback();
-            modalConfirmarCallback = null;
+            const callbackTemp = modalConfirmarCallback;
+            cerrarModalConfirmar();
+            callbackTemp();
         } else {
             console.error('❌ No hay callback para ejecutar');
+            cerrarModalConfirmar();
         }
     };
 
