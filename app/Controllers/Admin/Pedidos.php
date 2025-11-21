@@ -228,39 +228,28 @@ class Pedidos extends BaseController
                 ])->setStatusCode(404);
             }
 
-            // Extraer información del pedido
-            $info = $this->extraerInfoPedido($pedido['notas']);
-            $nombreCliente = $info['nombre_cliente'];
-            $fechaPedido = $pedido['created_at'];
+            // SIMPLIFICACIÓN: Eliminar SOLO este pedido específico, no todo el grupo
+            // Si el usuario quiere eliminar todo el grupo, deberá hacerlo uno por uno
 
-            log_message('info', 'Pedidos::eliminar - Cliente: ' . $nombreCliente . ', Fecha: ' . $fechaPedido);
+            log_message('info', 'Pedidos::eliminar - Eliminando pedido único ID: ' . $id);
 
-            // Obtener TODOS los pedidos del mismo grupo antes de eliminar (para devolver stock)
-            // USAR WHERE en lugar de LIKE para evitar SQL injection y búsquedas incorrectas
-            $pedidosDelGrupo = $this->db->table('pedidos as p')
-                ->select('p.*, pl.stock, pl.stock_ilimitado')
-                ->join('platos as pl', 'pl.id = p.plato_id', 'left')
-                ->where('p.created_at', $fechaPedido)
-                ->get()
-                ->getResultArray();
+            // Devolver stock SOLO si el pedido estaba completado
+            if ($pedido['estado'] === 'completado' && $pedido['plato_id']) {
+                // Obtener info del plato
+                $plato = $this->db->table('platos')->where('id', $pedido['plato_id'])->get()->getRowArray();
 
-            $cantidadPedidos = count($pedidosDelGrupo);
-
-            log_message('info', 'Pedidos::eliminar - Se eliminarán ' . $cantidadPedidos . ' pedidos y se devolverá el stock');
-
-            // Devolver stock a cada plato SOLO si el pedido estaba completado
-            foreach ($pedidosDelGrupo as $ped) {
-                if ($ped['estado'] === 'completado' && $ped['plato_id']) {
-                    $this->devolverStock($ped['plato_id'], $ped['cantidad']);
-                    log_message('info', 'Pedidos::eliminar - Stock devuelto para plato ID: ' . $ped['plato_id'] . ', cantidad: ' . $ped['cantidad']);
+                if ($plato && $plato['stock_ilimitado'] == 0) {
+                    $this->devolverStock($pedido['plato_id'], $pedido['cantidad']);
+                    log_message('info', 'Pedidos::eliminar - Stock devuelto para plato ID: ' . $pedido['plato_id'] . ', cantidad: ' . $pedido['cantidad']);
                 }
             }
 
-            // Eliminar TODOS los pedidos del mismo grupo
-            // USAR WHERE en lugar de LIKE para evitar SQL injection
+            // Eliminar SOLO este pedido
             $this->db->table('pedidos')
-                ->where('created_at', $fechaPedido)
+                ->where('id', $id)
                 ->delete();
+
+            $cantidadPedidos = 1;
 
             log_message('info', 'Pedidos::eliminar - Pedidos eliminados correctamente');
 
