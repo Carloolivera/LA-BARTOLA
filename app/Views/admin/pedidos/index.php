@@ -946,26 +946,33 @@ function eliminarPedido(pedidoId, event) {
             fetch(url, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/x-www-form-urlencoded',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
+                body: 'confirmar=1',
                 credentials: 'same-origin'
             })
             .then(response => {
                 console.log('Status response:', response.status);
-                if (!response.ok) {
-                    throw new Error('Error HTTP: ' + response.status);
-                }
-                return response.json();
+                console.log('Response headers:', response.headers);
+                return response.text();
             })
-            .then(data => {
-                console.log('Respuesta del servidor:', data);
-                if (data.success) {
-                    mostrarNotificacion('Pedido eliminado correctamente', 'success');
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    mostrarNotificacion(data.message || 'Error al eliminar pedido', 'error');
-                    console.error('Error al eliminar:', data);
+            .then(text => {
+                console.log('Respuesta RAW del servidor:', text);
+                try {
+                    const data = JSON.parse(text);
+                    console.log('Respuesta parseada:', data);
+                    if (data.success) {
+                        mostrarNotificacion('Pedido eliminado correctamente', 'success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        mostrarNotificacion(data.message || 'Error al eliminar pedido', 'error');
+                        console.error('Error al eliminar:', data);
+                    }
+                } catch (e) {
+                    console.error('Error al parsear JSON:', e);
+                    console.error('Texto recibido:', text);
+                    mostrarNotificacion('Error: Respuesta inválida del servidor', 'error');
                 }
             })
             .catch(error => {
