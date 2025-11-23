@@ -665,6 +665,9 @@ function cambiarEstado(key, pedidoId, event) {
         event.preventDefault();
     }
 
+    // Obtener el estado actual del pedido
+    const card = document.querySelector(`[data-pedido-key="${key}"]`);
+    const estadoActual = card ? card.dataset.estado : '';
 
     const estados = [
         { value: 'pendiente', label: '🟡 Pendiente' },
@@ -673,33 +676,69 @@ function cambiarEstado(key, pedidoId, event) {
         { value: 'cancelado', label: '🔴 Cancelado' }
     ];
 
-    let html = '<select class="form-control-editar" id="nuevoEstado">';
+    let html = '<div class="form-group-editar">';
+    html += '<label class="form-label-editar">Nuevo Estado:</label>';
+    html += '<select class="form-control-editar" id="nuevoEstado" onchange="verificarCancelacionCompletado(\'' + estadoActual + '\')">';
     estados.forEach(e => {
         html += `<option value="${e.value}">${e.label}</option>`;
     });
-    html += '</select>';
-    html += '<button class="btn-guardar-editar" onclick="guardarEstado(' + pedidoId + ', \'' + key + '\')">Guardar</button>';
+    html += '</select></div>';
+
+    // Campo de nota de cancelación (oculto por defecto)
+    html += '<div class="form-group-editar" id="notaCancelacionContainer" style="display: none;">';
+    html += '<label class="form-label-editar">Motivo de Cancelación:</label>';
+    html += '<textarea class="form-control-editar" id="notaCancelacion" rows="3" placeholder="Explica el motivo de la cancelación (ej: producto defectuoso, queja del cliente, etc.)"></textarea>';
+    html += '<small style="color: #ccc; display: block; margin-top: 5px;">Este campo es opcional pero se recomienda para mantener un registro.</small>';
+    html += '</div>';
+
+    html += '<button class="btn-guardar-editar" onclick="guardarEstado(' + pedidoId + ', \'' + key + '\', \'' + estadoActual + '\')">Guardar</button>';
 
     document.getElementById('modalEditarBody').innerHTML = html;
     document.getElementById('modalEditar').classList.add('active');
 }
 
-function guardarEstado(pedidoId, key) {
+// Verificar si se está cancelando un pedido completado
+function verificarCancelacionCompletado(estadoActual) {
     const nuevoEstado = document.getElementById('nuevoEstado').value;
+    const notaContainer = document.getElementById('notaCancelacionContainer');
+
+    // Mostrar campo de nota solo si se está cancelando un pedido completado
+    if (estadoActual === 'completado' && nuevoEstado === 'cancelado') {
+        notaContainer.style.display = 'block';
+    } else {
+        notaContainer.style.display = 'none';
+    }
+}
+
+function guardarEstado(pedidoId, key, estadoActual) {
+    const nuevoEstado = document.getElementById('nuevoEstado').value;
+    const notaCancelacion = document.getElementById('notaCancelacion') ? document.getElementById('notaCancelacion').value : '';
+
+    let body = `estado=${nuevoEstado}`;
+
+    // Si se está cancelando un pedido completado, incluir la nota
+    if (estadoActual === 'completado' && nuevoEstado === 'cancelado') {
+        if (notaCancelacion.trim() === '') {
+            mostrarNotificacion('Por favor, ingresa el motivo de la cancelación', 'error');
+            return;
+        }
+        body += `&nota_cancelacion=${encodeURIComponent(notaCancelacion)}`;
+    }
 
     fetch('<?= site_url("admin/pedidos/cambiarEstado") ?>/' + pedidoId, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: `estado=${nuevoEstado}`
+        body: body
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             // Cerrar modal y recargar inmediatamente
             cerrarModalEditar();
-            location.reload();
+            mostrarNotificacion('Estado actualizado correctamente', 'success');
+            setTimeout(() => location.reload(), 1000);
         } else {
             mostrarNotificacion(data.message || 'Error al cambiar estado', 'error');
         }
@@ -934,53 +973,83 @@ function eliminarPedido(pedidoId, event) {
 
     console.log('Intentando eliminar pedido ID:', pedidoId);
 
-    // Mostrar modal de confirmación personalizado
+    // Primer paso: Confirmar eliminación
     mostrarModalConfirmar(
         '¿Eliminar pedido?',
-        '¿Estás seguro de que deseas eliminar todo el pedido? Esta acción no se puede deshacer.',
+        '¿Estás seguro de que deseas eliminar este pedido? Esta acción no se puede deshacer.',
         () => {
-            // Callback cuando se confirma
-            const url = '<?= site_url("admin/pedidos/eliminar") ?>/' + pedidoId;
-            console.log('URL de eliminación:', url);
-
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: 'confirmar=1',
-                credentials: 'same-origin'
-            })
-            .then(response => {
-                console.log('Status response:', response.status);
-                console.log('Response headers:', response.headers);
-                return response.text();
-            })
-            .then(text => {
-                console.log('Respuesta RAW del servidor:', text);
-                try {
-                    const data = JSON.parse(text);
-                    console.log('Respuesta parseada:', data);
-                    if (data.success) {
-                        mostrarNotificacion('Pedido eliminado correctamente', 'success');
-                        setTimeout(() => location.reload(), 1000);
-                    } else {
-                        mostrarNotificacion(data.message || 'Error al eliminar pedido', 'error');
-                        console.error('Error al eliminar:', data);
-                    }
-                } catch (e) {
-                    console.error('Error al parsear JSON:', e);
-                    console.error('Texto recibido:', text);
-                    mostrarNotificacion('Error: Respuesta inválida del servidor', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error completo:', error);
-                mostrarNotificacion('Error al eliminar pedido: ' + error.message, 'error');
-            });
+            // Segundo paso: Preguntar si devolver stock
+            mostrarModalDevolverStock(pedidoId);
         }
     );
+}
+
+// Modal para preguntar si devolver stock
+function mostrarModalDevolverStock(pedidoId) {
+    const modalTitulo = document.getElementById('modalConfirmarTitulo');
+    const modalMensaje = document.getElementById('modalConfirmarMensaje');
+    const botonConfirmar = document.getElementById('modalConfirmarBoton');
+    const modal = document.getElementById('modalConfirmar');
+
+    modalTitulo.textContent = '¿Devolver productos al stock?';
+    modalMensaje.innerHTML = 'Si este pedido ya consumió productos del stock, ¿deseas devolverlos al inventario?<br><br><strong>SI:</strong> Los productos volverán al stock<br><strong>NO:</strong> El stock no se modificará';
+
+    // Crear botones SI y NO
+    const botonesDiv = document.querySelector('#modalConfirmar .btn-guardar-editar').parentElement;
+    botonesDiv.innerHTML = `
+        <button class="btn-guardar-editar" style="background: #666;" onclick="ejecutarEliminacionPedido(${pedidoId}, false)">
+            NO
+        </button>
+        <button class="btn-guardar-editar" style="background: linear-gradient(135deg, #4CAF50, #388E3C);" onclick="ejecutarEliminacionPedido(${pedidoId}, true)">
+            SI
+        </button>
+    `;
+
+    modal.classList.add('active');
+}
+
+// Ejecutar eliminación con o sin devolución de stock
+function ejecutarEliminacionPedido(pedidoId, devolverStock) {
+    cerrarModalConfirmar();
+
+    const url = '<?= site_url("admin/pedidos/eliminar") ?>/' + pedidoId;
+    console.log('URL de eliminación:', url, 'Devolver stock:', devolverStock);
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: `confirmar=1&devolver_stock=${devolverStock}`,
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        console.log('Status response:', response.status);
+        return response.text();
+    })
+    .then(text => {
+        console.log('Respuesta RAW del servidor:', text);
+        try {
+            const data = JSON.parse(text);
+            console.log('Respuesta parseada:', data);
+            if (data.success) {
+                mostrarNotificacion('Pedido eliminado correctamente', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                mostrarNotificacion(data.message || 'Error al eliminar pedido', 'error');
+                console.error('Error al eliminar:', data);
+            }
+        } catch (e) {
+            console.error('Error al parsear JSON:', e);
+            console.error('Texto recibido:', text);
+            mostrarNotificacion('Error: Respuesta inválida del servidor', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error completo:', error);
+        mostrarNotificacion('Error al eliminar pedido: ' + error.message, 'error');
+    });
 }
 
 function cerrarModalEditar() {

@@ -69,14 +69,23 @@ class Menu extends BaseController
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
+        $stockIlimitado = $this->request->getPost('stock_ilimitado') ? 1 : 0;
+        $stock = (int) $this->request->getPost('stock');
+        $disponible = $this->request->getPost('disponible') ? 1 : 0;
+
+        // VALIDACIÓN: No permitir marcar como disponible si stock=0 y NO es ilimitado
+        if ($disponible == 1 && $stock == 0 && $stockIlimitado == 0) {
+            return redirect()->back()->withInput()->with('error', 'No puedes marcar un producto como disponible cuando el stock es 0. Por favor, aumenta el stock o marca el producto como "Stock Ilimitado".');
+        }
+
         $data = [
             'nombre'          => $this->request->getPost('nombre'),
             'categoria'       => $this->request->getPost('categoria'),
             'descripcion'     => $this->request->getPost('descripcion'),
             'precio'          => $this->request->getPost('precio'),
-            'stock'           => (int) $this->request->getPost('stock'),
-            'stock_ilimitado' => $this->request->getPost('stock_ilimitado') ? 1 : 0,
-            'disponible'      => $this->request->getPost('disponible') ? 1 : 0,
+            'stock'           => $stock,
+            'stock_ilimitado' => $stockIlimitado,
+            'disponible'      => $disponible,
         ];
 
         // Manejo de imagen: nombre aleatorio (hash)
@@ -142,14 +151,23 @@ class Menu extends BaseController
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
+        $stockIlimitado = $this->request->getPost('stock_ilimitado') ? 1 : 0;
+        $stock = (int) $this->request->getPost('stock');
+        $disponible = $this->request->getPost('disponible') ? 1 : 0;
+
+        // VALIDACIÓN: No permitir marcar como disponible si stock=0 y NO es ilimitado
+        if ($disponible == 1 && $stock == 0 && $stockIlimitado == 0) {
+            return redirect()->back()->withInput()->with('error', 'No puedes marcar un producto como disponible cuando el stock es 0. Por favor, aumenta el stock o marca el producto como "Stock Ilimitado".');
+        }
+
         $data = [
             'nombre'          => $this->request->getPost('nombre'),
             'categoria'       => $this->request->getPost('categoria'),
             'descripcion'     => $this->request->getPost('descripcion'),
             'precio'          => $this->request->getPost('precio'),
-            'stock'           => (int) $this->request->getPost('stock'),
-            'stock_ilimitado' => $this->request->getPost('stock_ilimitado') ? 1 : 0,
-            'disponible'      => $this->request->getPost('disponible') ? 1 : 0,
+            'stock'           => $stock,
+            'stock_ilimitado' => $stockIlimitado,
+            'disponible'      => $disponible,
         ];
 
         $img = $this->request->getFile('imagen');

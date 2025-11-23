@@ -121,6 +121,7 @@ class Pedidos extends BaseController
         }
 
         $nuevoEstado = $this->request->getPost('estado');
+        $notaCancelacion = $this->request->getPost('nota_cancelacion');
 
         // Obtener el pedido actual
         $pedido = $this->db->table('pedidos')->where('id', $id)->get()->getRowArray();
@@ -131,10 +132,21 @@ class Pedidos extends BaseController
 
         $estadoAnterior = $pedido['estado'];
 
-        // Actualizar el estado del pedido
+        // Preparar datos para actualización
+        $datosActualizacion = ['estado' => $nuevoEstado];
+
+        // Si se está cancelando un pedido completado y hay nota de cancelación, agregarla
+        if ($nuevoEstado === 'cancelado' && $estadoAnterior === 'completado' && !empty($notaCancelacion)) {
+            $notasActuales = $pedido['notas'] ?? '';
+            $nuevaNota = "\n\n--- CANCELACIÓN ---\nMotivo: " . $notaCancelacion . "\nFecha: " . date('d/m/Y H:i') . "\nAdmin: " . auth()->user()->username;
+            $datosActualizacion['notas'] = $notasActuales . $nuevaNota;
+            log_message('info', 'Pedidos::cambiarEstado - Nota de cancelación agregada al pedido #' . $id);
+        }
+
+        // Actualizar el estado del pedido (y notas si aplica)
         $this->db->table('pedidos')
             ->where('id', $id)
-            ->update(['estado' => $nuevoEstado]);
+            ->update($datosActualizacion);
 
         // SI EL NUEVO ESTADO ES "COMPLETADO", DESCONTAR DEL STOCK
         if ($nuevoEstado === 'completado' && $estadoAnterior !== 'completado') {
@@ -216,6 +228,10 @@ class Pedidos extends BaseController
 
         log_message('info', 'Pedidos::eliminar - Intentando eliminar pedido ID: ' . $id);
 
+        // Verificar si se debe devolver stock
+        $devolverStock = $this->request->getPost('devolver_stock') === 'true';
+        log_message('info', 'Pedidos::eliminar - Devolver stock: ' . ($devolverStock ? 'SI' : 'NO'));
+
         try {
             // Obtener el pedido para identificar el grupo
             $pedido = $this->db->table('pedidos')->where('id', $id)->get()->getRowArray();
@@ -228,13 +244,10 @@ class Pedidos extends BaseController
                 ])->setStatusCode(404);
             }
 
-            // SIMPLIFICACIÓN: Eliminar SOLO este pedido específico, no todo el grupo
-            // Si el usuario quiere eliminar todo el grupo, deberá hacerlo uno por uno
+            log_message('info', 'Pedidos::eliminar - Eliminando pedido único ID: ' . $id . ', Estado: ' . $pedido['estado']);
 
-            log_message('info', 'Pedidos::eliminar - Eliminando pedido único ID: ' . $id);
-
-            // Devolver stock SOLO si el pedido estaba completado
-            if ($pedido['estado'] === 'completado' && $pedido['plato_id']) {
+            // Devolver stock SI el usuario lo confirmó Y el pedido tiene plato asociado
+            if ($devolverStock && $pedido['plato_id']) {
                 // Obtener info del plato
                 $plato = $this->db->table('platos')->where('id', $pedido['plato_id'])->get()->getRowArray();
 
@@ -244,18 +257,16 @@ class Pedidos extends BaseController
                 }
             }
 
-            // Eliminar SOLO este pedido
+            // Eliminar SOLO este pedido (NO eliminar registro de caja chica automáticamente)
             $this->db->table('pedidos')
                 ->where('id', $id)
                 ->delete();
 
-            $cantidadPedidos = 1;
-
-            log_message('info', 'Pedidos::eliminar - Pedidos eliminados correctamente');
+            log_message('info', 'Pedidos::eliminar - Pedido eliminado correctamente (NO se modificó caja chica)');
 
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Pedido eliminado correctamente (' . $cantidadPedidos . ' items)'
+                'message' => 'Pedido eliminado correctamente'
             ])->setStatusCode(200);
 
         } catch (\Exception $e) {
@@ -362,6 +373,9 @@ class Pedidos extends BaseController
                     // Si queremos REDUCIR la cantidad, devolver al stock la diferencia
                     $this->devolverStock($pedido['plato_id'], abs($diferenciaStock));
                 }
+
+                // NOTA: NO actualizamos caja chica cuando se editan cantidades en pedidos completados
+                // El usuario tiene control manual sobre los registros de caja chica
             }
         }
 
