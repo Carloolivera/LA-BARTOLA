@@ -180,9 +180,9 @@
                   <a href="<?= site_url('admin/menu/editar/' . $plato['id']) ?>" class="btn btn-sm btn-outline-warning flex-fill">
                     <i class="bi bi-pencil"></i> Editar
                   </a>
-                  <a href="<?= site_url('admin/menu/eliminar/' . $plato['id']) ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Eliminar este plato?')">
+                  <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmarEliminarPlato(<?= $plato['id'] ?>, '<?= addslashes(esc($plato['nombre'])) ?>')">
                     <i class="bi bi-trash"></i> Eliminar
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
@@ -193,7 +193,61 @@
   </div>
 </section>
 
+<!-- Modal de confirmación para eliminar plato -->
+<div class="modal fade" id="modalEliminarPlato" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background: #1a1a1a; border: 2px solid #D4B68A;">
+      <div class="modal-header" style="border-bottom: 1px solid #D4B68A;">
+        <h5 class="modal-title" style="color: #D4B68A;">
+          <i class="bi bi-exclamation-triangle"></i> Confirmar Eliminación
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" style="color: #fff;">
+        <p>¿Estás seguro de que deseas eliminar el plato <strong id="nombrePlatoEliminar" style="color: #D4B68A;"></strong>?</p>
+        <p class="text-danger mb-0"><small>Esta acción no se puede deshacer.</small></p>
+      </div>
+      <div class="modal-footer" style="border-top: 1px solid #D4B68A;">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <a href="#" id="btnConfirmarEliminar" class="btn btn-danger">
+          <i class="bi bi-trash"></i> Eliminar Plato
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
+  // Guardar posición del scroll antes de eliminar
+  let scrollPosition = 0;
+
+  // Función para confirmar eliminación
+  function confirmarEliminarPlato(id, nombre) {
+    // Guardar posición actual del scroll
+    scrollPosition = window.scrollY || window.pageYOffset;
+
+    // Actualizar el nombre del plato en el modal
+    document.getElementById('nombrePlatoEliminar').textContent = nombre;
+
+    // Actualizar el enlace de eliminación
+    const btnEliminar = document.getElementById('btnConfirmarEliminar');
+    btnEliminar.href = '<?= site_url("admin/menu/eliminar/") ?>/' + id;
+
+    // Mostrar el modal
+    const modal = new bootstrap.Modal(document.getElementById('modalEliminarPlato'));
+    modal.show();
+  }
+
+  // Restaurar posición del scroll después de cerrar el modal
+  document.getElementById('modalEliminarPlato').addEventListener('hidden.bs.modal', function () {
+    if (scrollPosition > 0) {
+      window.scrollTo({
+        top: scrollPosition,
+        behavior: 'instant'
+      });
+    }
+  });
+
   // Filtro por categorías
   document.querySelectorAll('.filter-tab').forEach(tab => {
     tab.addEventListener('click', function() {
@@ -213,6 +267,20 @@
         }
       });
     });
+  });
+
+  // Restaurar scroll después de redirigir
+  window.addEventListener('load', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const scroll = urlParams.get('scroll');
+    if (scroll) {
+      window.scrollTo({
+        top: parseInt(scroll),
+        behavior: 'instant'
+      });
+      // Limpiar el parámetro de la URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   });
 </script>
 

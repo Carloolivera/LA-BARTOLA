@@ -102,13 +102,29 @@
     }
   }
 
+  // Crear mapa de descripciones de categorías
+  $descripcionesCategoria = [];
+  if (isset($categorias_info) && !empty($categorias_info)) {
+    foreach ($categorias_info as $catInfo) {
+      $descripcionesCategoria[$catInfo['nombre']] = $catInfo['descripcion'] ?? '';
+    }
+  }
+
   foreach ($categorias as $nombreCategoria => $platosCategoria):
     if (empty($platosCategoria)) continue;
+    $descripcion = $descripcionesCategoria[$nombreCategoria] ?? '';
   ?>
 
   <div class="category-section">
     <div class="category-header" onclick="toggleCategory(this)">
-      <h2><?= esc($nombreCategoria) ?></h2>
+      <div>
+        <h2><?= esc($nombreCategoria) ?></h2>
+        <?php if (!empty($descripcion)): ?>
+          <p style="font-size: 0.85rem; margin: 5px 0 0 0; color: #D4B68A; font-weight: 400; opacity: 0.9;">
+            <?= esc($descripcion) ?>
+          </p>
+        <?php endif; ?>
+      </div>
       <i class="bi bi-chevron-up"></i>
     </div>
 

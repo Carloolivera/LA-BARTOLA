@@ -50,6 +50,7 @@ class Categorias extends BaseController
         }
 
         $nombre = $this->request->getPost('nombre');
+        $descripcion = $this->request->getPost('descripcion');
         $orden = $this->request->getPost('orden') ?: 0;
 
         if (empty($nombre)) {
@@ -61,6 +62,7 @@ class Categorias extends BaseController
 
         $data = [
             'nombre' => trim($nombre),
+            'descripcion' => $descripcion ? trim($descripcion) : null,
             'orden' => (int)$orden,
             'activa' => 1
         ];
@@ -69,6 +71,9 @@ class Categorias extends BaseController
             $id = $this->categoriaModel->insert($data);
 
             if ($id) {
+                // Limpiar caché de categorías
+                cache()->delete('categorias_con_descripcion');
+
                 return $this->response->setJSON([
                     'success' => true,
                     'message' => 'Categoría creada correctamente',
@@ -104,11 +109,13 @@ class Categorias extends BaseController
         }
 
         $nombre = $this->request->getPost('nombre');
+        $descripcion = $this->request->getPost('descripcion');
         $orden = $this->request->getPost('orden');
         $activa = $this->request->getPost('activa');
 
         $data = [];
         if ($nombre !== null) $data['nombre'] = trim($nombre);
+        if ($descripcion !== null) $data['descripcion'] = $descripcion ? trim($descripcion) : null;
         if ($orden !== null) $data['orden'] = (int)$orden;
         if ($activa !== null) $data['activa'] = (int)$activa;
 
@@ -129,6 +136,9 @@ class Categorias extends BaseController
             }
 
             $this->categoriaModel->update($id, $data);
+
+            // Limpiar caché de categorías
+            cache()->delete('categorias_con_descripcion');
 
             return $this->response->setJSON([
                 'success' => true,
@@ -170,6 +180,9 @@ class Categorias extends BaseController
 
         try {
             $this->categoriaModel->delete($id);
+
+            // Limpiar caché de categorías
+            cache()->delete('categorias_con_descripcion');
 
             return $this->response->setJSON([
                 'success' => true,
