@@ -4,7 +4,6 @@ namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
 use App\Models\NotificacionModel;
-use CodeIgniter\Database\BaseConnection;
 
 class Pedidos extends BaseController
 {
@@ -24,8 +23,7 @@ class Pedidos extends BaseController
             return redirect()->to('/')->with('error', 'Acceso denegado');
         }
 
-        // Obtener pedidos recientes con información del usuario y plato
-        // AGREGAR LIMIT para evitar cargar miles de pedidos
+        // Obtener pedidos de HOY con información del usuario y plato
         $pedidos = $this->db->table('pedidos as p')
             ->select('p.*,
                       u.username,
@@ -37,9 +35,9 @@ class Pedidos extends BaseController
             ->join('users as u', 'u.id = p.usuario_id', 'left')
             ->join('auth_identities as ai', 'ai.user_id = u.id AND ai.type = "email_password"', 'left')
             ->join('platos as pl', 'pl.id = p.plato_id', 'left')
+            ->where('DATE(p.created_at)', date('Y-m-d')) // SOLO pedidos de HOY
             ->orderBy('p.created_at', 'DESC')
             ->orderBy('p.id', 'DESC')
-            ->limit(500) // Solo los últimos 500 pedidos para rendimiento
             ->get()
             ->getResultArray();
 
@@ -99,7 +97,7 @@ class Pedidos extends BaseController
 
         if ($this->request->getMethod() === 'post') {
             $estado = $this->request->getPost('estado');
-            
+
             $this->db->table('pedidos')
                 ->where('id', $id)
                 ->update(['estado' => $estado]);
@@ -108,8 +106,28 @@ class Pedidos extends BaseController
         }
 
         $pedido['info_pedido'] = $this->extraerInfoPedido($pedido['notas']);
+
+        // Obtener todos los platos del pedido (mismo created_at)
+        $itemsPedido = $this->db->table('pedidos as p')
+            ->select('p.*, pl.nombre as plato_nombre, pl.precio, pl.stock, pl.stock_ilimitado')
+            ->join('platos as pl', 'pl.id = p.plato_id', 'left')
+            ->where('p.created_at', $pedido['created_at'])
+            ->get()
+            ->getResultArray();
+
+        // Obtener todos los platos disponibles del menú
+        $platosDisponibles = $this->db->table('platos')
+            ->select('id, nombre, precio, categoria, stock, stock_ilimitado')
+            ->where('disponible', 1)
+            ->orderBy('categoria', 'ASC')
+            ->orderBy('nombre', 'ASC')
+            ->get()
+            ->getResultArray();
+
         $data['pedido'] = $pedido;
-        
+        $data['items'] = $itemsPedido;
+        $data['platos_menu'] = $platosDisponibles;
+
         return view('admin/pedidos/editar', $data);
     }
 
@@ -160,10 +178,55 @@ class Pedidos extends BaseController
 
         // REGISTRAR EN CAJA CHICA cuando el estado cambia a "completado" o "cancelado"
         if ($nuevoEstado === 'completado' && $estadoAnterior !== 'completado') {
-            $this->registrarEnCajaChica($pedido, 'entrada');
+            // Buscar todos los pedidos del mismo grupo (mismo created_at)
+            $pedidosGrupo = $this->db->table('pedidos')
+                ->where('created_at', $pedido['created_at'])
+                ->get()
+                ->getResultArray();
+            
+            // Calcular el total del pedido completo
+            $totalCompleto = 0;
+            $idsGrupo = [];
+            foreach ($pedidosGrupo as $p) {
+                $totalCompleto += $p['total'];
+                $idsGrupo[] = $p['id'];
+            }
+            
+            // Verificar si YA existe un registro en caja chica para CUALQUIERA de los pedidos del grupo
+            $yaRegistrado = false;
+            foreach ($idsGrupo as $idGrupo) {
+                $existe = $this->db->table('caja_chica')
+                    ->like('concepto', "Pedido #{$idGrupo} -", 'after')
+                    ->where('tipo', 'entrada')
+                    ->countAllResults();
+                if ($existe > 0) {
+                    $yaRegistrado = true;
+                    break;
+                }
+            }
+            
+            if (!$yaRegistrado) {
+                $pedidoCompleto = $pedido;
+                $pedidoCompleto['total'] = $totalCompleto;
+                $this->registrarEnCajaChica($pedidoCompleto, 'entrada');
+            }
+            
         } elseif ($nuevoEstado === 'cancelado' && $estadoAnterior === 'completado') {
             // Si se cancela un pedido completado, registrar como salida (devolución)
-            $this->registrarEnCajaChica($pedido, 'salida');
+            $pedidosGrupo = $this->db->table('pedidos')
+                ->where('created_at', $pedido['created_at'])
+                ->get()
+                ->getResultArray();
+            
+            $totalCompleto = 0;
+            foreach ($pedidosGrupo as $p) {
+                $totalCompleto += $p['total'];
+            }
+            
+            $pedidoCompleto = $pedido;
+            $pedidoCompleto['total'] = $totalCompleto;
+            
+            $this->registrarEnCajaChica($pedidoCompleto, 'salida');
         }
 
         // Crear notificación para el usuario del pedido
@@ -533,7 +596,8 @@ class Pedidos extends BaseController
             return redirect()->to('/')->with('error', 'Acceso denegado');
         }
 
-        $pedido = $this->db->table('pedidos as p')
+        // 1. Obtener el pedido base para tener la fecha y datos del cliente
+        $pedidoBase = $this->db->table('pedidos as p')
             ->select('p.*, 
                       u.username, 
                       ai.secret as email,
@@ -546,13 +610,29 @@ class Pedidos extends BaseController
             ->get()
             ->getRowArray();
 
-        if (!$pedido) {
+        if (!$pedidoBase) {
             return redirect()->to('/admin/pedidos')->with('error', 'Pedido no encontrado');
         }
 
-        $pedido['info_pedido'] = $this->extraerInfoPedido($pedido['notas']);
+        // 2. Obtener TODOS los items del mismo grupo (mismo created_at)
+        $items = $this->db->table('pedidos as p')
+            ->select('p.*, pl.nombre as plato_nombre, pl.precio')
+            ->join('platos as pl', 'pl.id = p.plato_id', 'left')
+            ->where('p.created_at', $pedidoBase['created_at'])
+            ->get()
+            ->getResultArray();
 
-        $data['pedido'] = $pedido;
+        $pedidoBase['info_pedido'] = $this->extraerInfoPedido($pedidoBase['notas']);
+
+        // Calcular total real sumando todos los items
+        $totalReal = 0;
+        foreach ($items as $item) {
+            $totalReal += $item['total'];
+        }
+        $pedidoBase['total_grupo'] = $totalReal;
+
+        $data['pedido'] = $pedidoBase;
+        $data['items'] = $items; // Pasar todos los items a la vista
         
         return view('admin/pedidos/ticket', $data);
     }
@@ -625,7 +705,7 @@ class Pedidos extends BaseController
         try {
             // Extraer información del pedido
             $info = $this->extraerInfoPedido($pedido['notas']);
-            $nombreCliente = $info['nombre'] ?? 'Cliente';
+            $nombreCliente = $info['nombre_cliente'] ?? 'Cliente';
             $formaPago = strtolower($info['forma_pago'] ?? 'efectivo');
 
             // Determinar si es digital o efectivo

@@ -90,10 +90,10 @@ Options -Indexes
     RewriteCond %{SCRIPT_FILENAME} -f
     RewriteRule "(^|/)\." - [F]
 
-    # Redirect to index.php (URLs limpias)
+    # Redirect to index.php (URLs limpias) - Preservar método POST
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^(.*)$ index.php/$1 [L]
+    RewriteRule ^(.*)$ index.php?/$1 [L,QSA]
 
     # Ensure Authorization header is passed
     RewriteCond %{HTTP:Authorization} .

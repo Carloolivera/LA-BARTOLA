@@ -180,4 +180,76 @@ class CajaChica extends BaseController
 
         return view('admin/caja_chica/imprimir', $data);
     }
+
+    /**
+     * Exportar a Excel (CSV) el reporte del día
+     */
+    public function exportarExcel($fecha = null)
+    {
+        $fecha = $fecha ?? date('Y-m-d');
+
+        // Obtener movimientos del día
+        $movimientos = $this->cajaModel->getMovimientosPorFecha($fecha);
+
+        // Calcular totales
+        $saldo = $this->cajaModel->getSaldoDia($fecha);
+
+        // Configurar headers para descarga CSV
+        $filename = 'caja_chica_' . $fecha . '.csv';
+
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+        // Crear archivo en memoria
+        $output = fopen('php://output', 'w');
+
+        // BOM para UTF-8 (necesario para que Excel reconozca acentos)
+        fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+
+        // Encabezado del archivo
+        fputcsv($output, ['CAJA CHICA - LA BARTOLA'], ';');
+        fputcsv($output, ['Fecha: ' . date('d/m/Y', strtotime($fecha))], ';');
+        fputcsv($output, [''], ';');
+
+        // Encabezados de columnas
+        fputcsv($output, ['Fecha', 'Hora', 'Concepto', 'Tipo Pago', 'Entrada', 'Salida', 'Saldo'], ';');
+
+        // Datos
+        $saldoAcumulado = 0;
+        foreach ($movimientos as $mov) {
+            if ($mov['tipo'] === 'entrada') {
+                $saldoAcumulado += $mov['monto'];
+                $entrada = '$' . number_format($mov['monto'], 2, ',', '.');
+                $salida = '-';
+            } else {
+                $saldoAcumulado -= $mov['monto'];
+                $entrada = '-';
+                $salida = '$' . number_format($mov['monto'], 2, ',', '.');
+            }
+
+            $tipoPago = ($mov['es_digital'] == 1) ? 'Digital' : 'Efectivo';
+
+            fputcsv($output, [
+                date('d/m/Y', strtotime($mov['fecha'])),
+                date('H:i', strtotime($mov['hora'])),
+                $mov['concepto'],
+                $tipoPago,
+                $entrada,
+                $salida,
+                '$' . number_format($saldoAcumulado, 2, ',', '.')
+            ], ';');
+        }
+
+        // Totales
+        fputcsv($output, [''], ';');
+        fputcsv($output, ['RESUMEN'], ';');
+        fputcsv($output, ['Total Entradas (Efectivo):', '$' . number_format($saldo['efectivo'], 2, ',', '.')], ';');
+        fputcsv($output, ['Total Digital:', '$' . number_format($saldo['digital'], 2, ',', '.')], ';');
+        fputcsv($output, ['Total Entradas:', '$' . number_format($saldo['entradas'], 2, ',', '.')], ';');
+        fputcsv($output, ['Total Salidas:', '$' . number_format($saldo['salidas'], 2, ',', '.')], ';');
+        fputcsv($output, ['SALDO FINAL:', '$' . number_format($saldo['saldo'], 2, ',', '.')], ';');
+
+        fclose($output);
+        exit;
+    }
 }

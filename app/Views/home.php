@@ -22,8 +22,443 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   </noscript>
 
-  <!-- Estilos externos -->
-  <link rel="stylesheet" href="<?= base_url('assets/css/home.css') ?>">
+  <!-- Estilos críticos inline para eliminar render blocking -->
+  <style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: #f5f5f5;
+  padding-bottom: 100px;
+  overflow-x: hidden;
+}
+
+/* Header Fijo */
+.fixed-header {
+  background: linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 100%);
+  padding: 15px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+/* Redes Sociales - Solo Iconos */
+.social-icons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.social-icons a {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #D4B68A;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.social-icons a:active {
+  transform: scale(0.95);
+}
+
+/* Logo Circular Fijo */
+.header-brand {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.header-logo {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #D4B68A;
+  background: #000;
+  padding: 5px;
+}
+
+.header-brand h1 {
+  color: #D4B68A;
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-top: 10px;
+  margin-bottom: 0;
+}
+
+/* Información del Local */
+.info-section {
+  background-color: rgba(212, 182, 138, 0.1);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  color: #fff;
+  font-size: 0.9rem;
+  justify-content: center;
+}
+
+.info-item i {
+  color: #D4B68A;
+  font-size: 1.2rem;
+  min-width: 25px;
+}
+
+.info-item-link {
+  text-decoration: none;
+  color: #fff;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.info-item-link:hover {
+  background-color: rgba(212, 182, 138, 0.2);
+  border-radius: 8px;
+}
+
+.info-item-link:active {
+  transform: scale(0.98);
+}
+
+/* Frase Motivacional */
+.header-tagline {
+  text-align: center;
+  color: #D4B68A;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 0.9rem;
+  margin: 15px 0 0 0;
+  padding: 0 20px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.3px;
+}
+
+/* Buscador */
+.search-container {
+  padding: 15px;
+  background-color: #fff;
+  border-bottom: 2px solid #e0e0e0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.search-box {
+  position: relative;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 12px 45px 12px 45px;
+  border: 2px solid #D4B68A;
+  border-radius: 25px;
+  font-size: 1rem;
+  outline: none;
+  transition: box-shadow 0.2s;
+}
+
+.search-box input:focus {
+  box-shadow: 0 0 0 3px rgba(212, 182, 138, 0.2);
+}
+
+.search-box .search-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #D4B68A;
+  font-size: 1.2rem;
+}
+
+.search-box .clear-icon {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: none;
+}
+
+/* Menú por Categorías */
+.menu-container {
+  padding: 15px;
+}
+
+.category-section {
+  margin-bottom: 20px;
+  background-color: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.category-header {
+  background: linear-gradient(135deg, #D4B68A 0%, #c9a770 100%);
+  padding: 15px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+}
+
+.category-header h2 {
+  color: #000;
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.category-header i {
+  font-size: 1.5rem;
+  color: #000;
+  transition: transform 0.3s;
+}
+
+.category-header.collapsed i {
+  transform: rotate(180deg);
+}
+
+.category-content {
+  max-height: 2000px;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.category-content.collapsed {
+  max-height: 0;
+}
+
+/* Item de Plato */
+.plato-item {
+  display: flex;
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  align-items: center;
+  gap: 12px;
+  transition: background-color 0.2s;
+}
+
+.plato-item:last-child {
+  border-bottom: none;
+}
+
+.plato-image {
+  width: 70px;
+  height: 70px;
+  border-radius: 10px;
+  object-fit: cover;
+  background-color: #e0e0e0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 2rem;
+}
+
+.plato-info {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.plato-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #333;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+
+.plato-description {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.plato-price {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #D4B68A;
+}
+
+/* Controles de Cantidad */
+.quantity-controls {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.quantity-controls.active {
+  display: flex;
+}
+
+.quantity-btn {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  border: 2px solid #D4B68A;
+  background-color: #fff;
+  color: #D4B68A;
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.quantity-btn:active {
+  transform: scale(0.9);
+  background-color: #D4B68A;
+  color: #fff;
+}
+
+.add-btn {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  border: 2px solid #D4B68A;
+  background-color: #D4B68A;
+  color: #fff;
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.add-btn:active {
+  transform: scale(0.9);
+}
+
+.add-btn.hidden {
+  display: none;
+}
+
+.quantity-display {
+  font-size: 1.2rem;
+  font-weight: 600;
+  min-width: 30px;
+  text-align: center;
+}
+
+/* Botón Flotante del Carrito */
+.cart-float {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #D4B68A 0%, #c9a770 100%);
+  color: #000;
+  padding: 15px 30px;
+  border-radius: 50px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+  z-index: 1000;
+  min-width: 280px;
+  justify-content: center;
+}
+
+.cart-float:active {
+  transform: translateX(-50%) scale(0.97);
+}
+
+.cart-float .cart-icon {
+  font-size: 1.5rem;
+}
+
+.cart-float .cart-total {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.cart-badge {
+  background-color: #000;
+  color: #fff;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+/* Animaciones */
+@keyframes slideIn {
+  from {
+    transform: translateY(100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.plato-item {
+  animation: slideIn 0.3s ease;
+}
+
+/* Estado vacío */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.empty-state i {
+  font-size: 4rem;
+  margin-bottom: 15px;
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+  body {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+  </style>
 </head>
 <body>
 
@@ -44,7 +479,7 @@
 
   <!-- Logo Circular y Título -->
   <div class="header-brand">
-    <img src="<?= base_url('assets/images/logo.png') ?>" alt="La Bartola" class="header-logo" id="adminLogo" data-caja-chica-url="<?= site_url('admin/caja-chica') ?>">
+    <img src="<?= base_url('assets/images/logo.png') ?>" alt="La Bartola" class="header-logo" id="adminLogo" data-caja-chica-url="<?= site_url('admin/caja-chica') ?>" width="80" height="80" fetchpriority="high">
     <h1>La Bartola</h1>
   </div>
 
@@ -84,35 +519,36 @@
 <!-- Menú por Categorías -->
 <div class="menu-container">
   <?php
-  // Organizar platos por categoría
-  $categorias = [
-    'Bebidas' => [],
-    'Empanadas' => [],
-    'Pizzas' => [],
-    'Tartas' => [],
-    'Postres' => []
-  ];
+  // Organizar platos por categoría dinámicamente
+  $categorias = [];
 
+  // Primero, inicializar todas las categorías activas desde la BD
+  if (isset($categorias_info) && !empty($categorias_info)) {
+    foreach ($categorias_info as $catInfo) {
+      $categorias[$catInfo['nombre']] = [
+        'platos' => [],
+        'descripcion' => $catInfo['descripcion'] ?? '',
+        'orden' => $catInfo['orden'] ?? 0
+      ];
+    }
+  }
+
+  // Luego, agregar los platos a sus categorías correspondientes
   if (!empty($platos)) {
     foreach ($platos as $plato) {
       $cat = $plato['categoria'] ?? 'Otros';
       if (isset($categorias[$cat])) {
-        $categorias[$cat][] = $plato;
+        $categorias[$cat]['platos'][] = $plato;
       }
     }
   }
 
-  // Crear mapa de descripciones de categorías
-  $descripcionesCategoria = [];
-  if (isset($categorias_info) && !empty($categorias_info)) {
-    foreach ($categorias_info as $catInfo) {
-      $descripcionesCategoria[$catInfo['nombre']] = $catInfo['descripcion'] ?? '';
-    }
-  }
+  // Mostrar categorías en el orden definido
+  foreach ($categorias as $nombreCategoria => $datosCategoria):
+    $platosCategoria = $datosCategoria['platos'];
+    $descripcion = $datosCategoria['descripcion'];
 
-  foreach ($categorias as $nombreCategoria => $platosCategoria):
     if (empty($platosCategoria)) continue;
-    $descripcion = $descripcionesCategoria[$nombreCategoria] ?? '';
   ?>
 
   <div class="category-section">
@@ -142,12 +578,12 @@
               <img src="<?= $imagenUrl ?>"
                    alt="<?= esc($plato['nombre']) ?>"
                    loading="lazy"
+                   decoding="async"
                    style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
             <?php else: ?>
               <i class="bi bi-image"></i>
             <?php endif; ?>
           </div>
-
           <div class="plato-info">
             <div class="plato-name"><?= esc($plato['nombre']) ?></div>
             <div class="plato-description"><?= esc($plato['descripcion']) ?></div>
@@ -186,8 +622,8 @@
   <span class="cart-total" id="cartTotal">$0</span>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="<?= base_url('assets/js/home.js') ?>"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+<script src="<?= base_url('assets/js/home.js') ?>" defer></script>
 <script>
   // Inicializar carrito con datos del servidor
   const carritoServidor = <?= json_encode($carrito ?? []) ?>;

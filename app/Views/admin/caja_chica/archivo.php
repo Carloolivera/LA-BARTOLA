@@ -64,6 +64,11 @@
                                                     <i class="bi bi-eye"></i>
                                                     <span class="d-none d-md-inline"> Ver</span>
                                                 </a>
+                                                <a href="<?= base_url('admin/caja-chica/exportarExcel/' . $f['fecha']) ?>"
+                                                   class="btn btn-success">
+                                                    <i class="bi bi-file-earmark-excel"></i>
+                                                    <span class="d-none d-md-inline"> Excel</span>
+                                                </a>
                                                 <a href="<?= base_url('admin/caja-chica/imprimir/' . $f['fecha']) ?>"
                                                    target="_blank"
                                                    class="btn btn-secondary">

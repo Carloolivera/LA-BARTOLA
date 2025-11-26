@@ -346,15 +346,33 @@
         <button class="filtro-btn" data-filter="pendiente">
             🟡 Pendientes
         </button>
-        <button class="filtro-btn" data-filter="en_proceso">
-            🔵 En Proceso
-        </button>
+
         <button class="filtro-btn" data-filter="completado">
             🟢 Completados
         </button>
         <button class="filtro-btn" data-filter="cancelado">
             🔴 Cancelados
         </button>
+
+        <!-- Buscador Inteligente -->
+        <div class="buscador-pedidos" style="flex: 1; max-width: 400px; margin-left: 15px;">
+            <div style="position: relative;">
+                <input
+                    type="text"
+                    id="buscadorPedidos"
+                    placeholder="🔍 Buscar por cliente, dirección, pedido..."
+                    style="width: 100%; padding: 10px 40px 10px 15px; border: 2px solid #D4B68A; border-radius: 25px; background: #1a1a1a; color: #fff; font-size: 0.95rem;"
+                />
+                <button
+                    id="limpiarBusqueda"
+                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #D4B68A; font-size: 1.2rem; cursor: pointer; display: none;"
+                    title="Limpiar búsqueda"
+                >
+                    ✕
+                </button>
+            </div>
+            <div id="resultadosBusqueda" style="color: #D4B68A; font-size: 0.85rem; margin-top: 5px; display: none;"></div>
+        </div>
     </div>
 
     <!-- Lista de Pedidos -->
@@ -374,9 +392,9 @@
                     $pedidosAgrupados[$key] = [
                         'cliente' => $pedido['info_pedido']['nombre_cliente'],
                         'fecha' => $pedido['created_at'] ?? 'now',
-                        'tipo_entrega' => $pedido['info_pedido']['tipo_entrega'],
-                        'direccion' => $pedido['info_pedido']['direccion'] ?? '',
-                        'forma_pago' => $pedido['info_pedido']['forma_pago'],
+                        'tipo_entrega' => $pedido['tipo_entrega'] ?? $pedido['info_pedido']['tipo_entrega'],
+                        'direccion' => $pedido['direccion'] ?? $pedido['info_pedido']['direccion'] ?? '',
+                        'forma_pago' => $pedido['forma_pago'] ?? $pedido['info_pedido']['forma_pago'],
                         'estado' => $pedido['estado'],
                         'items' => [],
                         'primer_id' => $pedido['id']
@@ -405,11 +423,13 @@
                     default => $grupo['estado']
                 };
                 ?>
-                <div class="pedido-card" data-estado="<?= $grupo['estado'] ?>" data-pedido-key="<?= $key ?>">
+                <div class="pedido-card" data-estado="<?= $grupo['estado'] ?>" data-pedido-key="<?= $key ?>" data-pedido-id="<?= $grupo['primer_id'] ?>">
                     <!-- Header -->
                     <div class="pedido-header">
                         <div>
-                            <div class="pedido-cliente"><?= esc($grupo['cliente']) ?></div>
+                            <div class="pedido-cliente">
+                                Pedido #<?= $grupo['primer_id'] ?> - <?= esc($grupo['cliente']) ?>
+                            </div>
                             <div class="pedido-fecha">
                                 <?= date('d/m/Y - H:i', strtotime($grupo['fecha'])) ?>
                             </div>
@@ -462,18 +482,22 @@
                         </div>
 
                         <div class="pedido-actions">
-                            <button class="btn-pedido btn-estado" onclick="cambiarEstado('<?= $key ?>', '<?= $grupo['primer_id'] ?>', event)">
-                                <i class="bi bi-arrow-repeat"></i> Estado
-                            </button>
+                            <?php if ($grupo['estado'] !== 'cancelado'): ?>
+                                <button class="btn-pedido btn-estado" onclick="cambiarEstado('<?= $key ?>', '<?= $grupo['primer_id'] ?>', event)">
+                                    <i class="bi bi-arrow-repeat"></i> Estado
+                                </button>
+                            <?php endif; ?>
                             <button class="btn-pedido btn-imprimir" onclick="imprimir(<?= $grupo['primer_id'] ?>, event)">
                                 <i class="bi bi-printer"></i> Imprimir
                             </button>
-                            <button class="btn-pedido btn-editar" onclick="editarPedido('<?= $key ?>', event)">
-                                <i class="bi bi-pencil"></i> Editar
-                            </button>
-                            <button class="btn-pedido btn-eliminar" onclick="eliminarPedido(<?= $grupo['primer_id'] ?>, event)">
-                                <i class="bi bi-trash"></i> Eliminar
-                            </button>
+                            <?php if ($grupo['estado'] !== 'cancelado'): ?>
+                                <a href="<?= base_url('admin/pedidos/editar/' . $grupo['primer_id']) ?>" class="btn-pedido btn-editar" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 5px;">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </a>
+                                <button class="btn-pedido btn-eliminar" onclick="eliminarPedido(<?= $grupo['primer_id'] ?>, event)">
+                                    <i class="bi bi-trash"></i> Eliminar
+                                </button>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -535,7 +559,67 @@ document.querySelectorAll('.filtro-btn').forEach(btn => {
                 card.style.display = 'none';
             }
         });
+
+        // Limpiar búsqueda al cambiar filtro
+        document.getElementById('buscadorPedidos').value = '';
+        document.getElementById('limpiarBusqueda').style.display = 'none';
+        document.getElementById('resultadosBusqueda').style.display = 'none';
     });
+});
+
+// Buscador Inteligente de Pedidos
+const buscadorInput = document.getElementById('buscadorPedidos');
+const btnLimpiar = document.getElementById('limpiarBusqueda');
+const resultados = document.getElementById('resultadosBusqueda');
+
+buscadorInput.addEventListener('input', function() {
+    const termino = this.value.toLowerCase().trim();
+
+    if (termino.length === 0) {
+        btnLimpiar.style.display = 'none';
+        resultados.style.display = 'none';
+        // Restaurar todos los pedidos visibles según el filtro activo
+        const filtroActivo = document.querySelector('.filtro-btn.active').dataset.filter;
+        document.querySelectorAll('.pedido-card').forEach(card => {
+            if (filtroActivo === 'todos' || card.dataset.estado === filtroActivo) {
+                card.style.display = 'block';
+            }
+        });
+        return;
+    }
+
+    btnLimpiar.style.display = 'block';
+
+    let encontrados = 0;
+    document.querySelectorAll('.pedido-card').forEach(card => {
+        const cliente = card.querySelector('.pedido-cliente')?.textContent.toLowerCase() || '';
+        const direccion = card.querySelector('.bi-geo-alt')?.nextElementSibling?.textContent.toLowerCase() || '';
+        const items = Array.from(card.querySelectorAll('.item-nombre')).map(el => el.textContent.toLowerCase()).join(' ');
+        const pedidoId = card.dataset.pedidoId || '';
+
+        const coincide = cliente.includes(termino) ||
+                        direccion.includes(termino) ||
+                        items.includes(termino) ||
+                        pedidoId.includes(termino);
+
+        if (coincide) {
+            card.style.display = 'block';
+            encontrados++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    resultados.textContent = encontrados > 0
+        ? `✓ ${encontrados} pedido${encontrados !== 1 ? 's' : ''} encontrado${encontrados !== 1 ? 's' : ''}`
+        : '✗ No se encontraron pedidos';
+    resultados.style.display = 'block';
+});
+
+btnLimpiar.addEventListener('click', function() {
+    buscadorInput.value = '';
+    buscadorInput.dispatchEvent(new Event('input'));
+    buscadorInput.focus();
 });
 
 // Cambiar cantidad de item
@@ -659,6 +743,7 @@ function actualizarTotal(itemId) {
 }
 
 // Cambiar estado
+// Cambiar estado - OPTIMIZADO
 function cambiarEstado(key, pedidoId, event) {
     if (event) {
         event.stopPropagation();
@@ -667,34 +752,62 @@ function cambiarEstado(key, pedidoId, event) {
 
     // Obtener el estado actual del pedido
     const card = document.querySelector(`[data-pedido-key="${key}"]`);
-    const estadoActual = card ? card.dataset.estado : '';
+    const estadoActual = card ? card.dataset.estado : 'pendiente';
 
-    const estados = [
-        { value: 'pendiente', label: '🟡 Pendiente' },
-        { value: 'en_proceso', label: '🔵 En Proceso' },
-        { value: 'completado', label: '🟢 Completado' },
-        { value: 'cancelado', label: '🔴 Cancelado' }
-    ];
+    // Referencias a elementos del modal (ya deben existir en el DOM)
+    const selectEstado = document.getElementById('nuevoEstado');
+    const btnGuardar = document.getElementById('btnGuardarEstado');
+    const notaContainer = document.getElementById('notaCancelacionContainer');
+    
+    // Si el modal no está construido, construirlo una sola vez (lazy init)
+    if (!selectEstado) {
+        construirModalEstado();
+        // Volver a llamar para poblar datos
+        cambiarEstado(key, pedidoId, null);
+        return;
+    }
 
-    let html = '<div class="form-group-editar">';
-    html += '<label class="form-label-editar">Nuevo Estado:</label>';
-    html += '<select class="form-control-editar" id="nuevoEstado" onchange="verificarCancelacionCompletado(\'' + estadoActual + '\')">';
-    estados.forEach(e => {
-        html += `<option value="${e.value}">${e.label}</option>`;
-    });
-    html += '</select></div>';
+    // Resetear valores
+    selectEstado.value = estadoActual;
+    if(document.getElementById('notaCancelacion')) {
+        document.getElementById('notaCancelacion').value = '';
+    }
+    
+    // Configurar evento onchange para verificar cancelación
+    selectEstado.onchange = function() {
+        verificarCancelacionCompletado(estadoActual);
+    };
+    
+    // Configurar botón guardar
+    btnGuardar.onclick = function() {
+        guardarEstado(pedidoId, key, estadoActual);
+    };
 
-    // Campo de nota de cancelación (oculto por defecto)
-    html += '<div class="form-group-editar" id="notaCancelacionContainer" style="display: none;">';
-    html += '<label class="form-label-editar">Motivo de Cancelación:</label>';
-    html += '<textarea class="form-control-editar" id="notaCancelacion" rows="3" placeholder="Explica el motivo de la cancelación (ej: producto defectuoso, queja del cliente, etc.)"></textarea>';
-    html += '<small style="color: #ccc; display: block; margin-top: 5px;">Este campo es opcional pero se recomienda para mantener un registro.</small>';
-    html += '</div>';
+    // Verificar estado inicial de la nota
+    verificarCancelacionCompletado(estadoActual);
 
-    html += '<button class="btn-guardar-editar" onclick="guardarEstado(' + pedidoId + ', \'' + key + '\', \'' + estadoActual + '\')">Guardar</button>';
-
-    document.getElementById('modalEditarBody').innerHTML = html;
+    // Mostrar modal
     document.getElementById('modalEditar').classList.add('active');
+}
+
+function construirModalEstado() {
+    const html = `
+        <div class="form-group-editar">
+            <label class="form-label-editar">Nuevo Estado:</label>
+            <select class="form-control-editar" id="nuevoEstado">
+                <option value="pendiente">🟡 Pendiente</option>
+                <option value="completado">🟢 Completado</option>
+                <option value="cancelado">🔴 Cancelado</option>
+            </select>
+        </div>
+        <div class="form-group-editar" id="notaCancelacionContainer" style="display: none;">
+            <label class="form-label-editar">Motivo de Cancelación:</label>
+            <textarea class="form-control-editar" id="notaCancelacion" rows="3" placeholder="Explica el motivo..."></textarea>
+            <small style="color: #ccc; display: block; margin-top: 5px;">Opcional.</small>
+        </div>
+        <button class="btn-guardar-editar" id="btnGuardarEstado">Guardar</button>
+    `;
+    document.getElementById('modalEditarBody').innerHTML = html;
 }
 
 // Verificar si se está cancelando un pedido completado
@@ -864,8 +977,9 @@ function mostrarSelectorPlatos(key) {
             let platosOptions = '<option value="">-- Selecciona un plato --</option>';
             data.platos.forEach(plato => {
                 const stockInfo = plato.stock_ilimitado == 1 ? '∞' : `Stock: ${plato.stock}`;
+                const disponibleText = plato.disponible == 0 ? ' [NO DISPONIBLE]' : '';
                 platosOptions += `<option value="${plato.id}" data-precio="${plato.precio}">
-                    ${plato.nombre} - $${Number(plato.precio).toLocaleString('es-AR')} (${stockInfo})
+                    [${plato.categoria}] ${plato.nombre} - $${Number(plato.precio).toLocaleString('es-AR')} (${stockInfo})${disponibleText}
                 </option>`;
             });
 
@@ -1177,6 +1291,30 @@ window.addEventListener('beforeunload', () => {
     }
 });
 </script>
+
+<!-- Footer Admin -->
+<footer class="text-center text-light py-4 mt-5" style="background-color: #1a1a1a; border-top: 2px solid #D4B68A;">
+    <div class="container">
+        <div class="d-flex justify-content-center align-items-center gap-4 flex-wrap">
+            <a href="https://docs.google.com/spreadsheets" target="_blank" class="text-decoration-none" title="Google Sheets">
+                <i class="bi bi-file-earmark-excel" style="font-size: 1.8rem; color: #1D6F42;"></i>
+            </a>
+            <a href="https://docs.google.com/document" target="_blank" class="text-decoration-none" title="Google Docs">
+                <i class="bi bi-file-earmark-word" style="font-size: 1.8rem; color: #2B579A;"></i>
+            </a>
+            <a href="https://hpanel.hostinger.com" target="_blank" class="text-decoration-none" title="Hostinger Panel">
+                <i class="bi bi-hdd-rack" style="font-size: 1.8rem; color: #673DE6;"></i>
+            </a>
+            <a href="https://mail.google.com" target="_blank" class="text-decoration-none" title="Gmail">
+                <i class="bi bi-envelope" style="font-size: 1.8rem; color: #D93025;"></i>
+            </a>
+            <a href="https://www.instagram.com/aido_agenciaweb/" target="_blank" class="text-decoration-none" title="Soporte Técnico">
+                <i class="bi bi-life-preserver" style="font-size: 1.8rem; color: #D4B68A;"></i>
+            </a>
+        </div>
+        <p class="mb-0 mt-3 small" style="color: #999;">© 2025 La Bartola | Panel Administrativo</p>
+    </div>
+</footer>
 
 </section>
 <?= $this->endSection() ?>

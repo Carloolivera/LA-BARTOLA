@@ -59,7 +59,15 @@
     padding: 8px 20px;
     border-radius: 8px;
     font-weight: 500;
-    margin-left: 10px;
+  }
+
+  @media (max-width: 576px) {
+    .admin-btn-primary,
+    .admin-btn-secondary {
+      width: 100%;
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
   }
 
   .admin-btn-secondary:hover {
@@ -103,12 +111,12 @@
 <section class="admin-menu-section">
   <div class="container">
     <div class="mb-4">
-      <div class="d-flex justify-content-between align-items-center flex-wrap">
-        <div class="mb-3 mb-md-0">
+      <div class="d-flex justify-content-between align-items-start align-items-md-center flex-wrap gap-3">
+        <div class="mb-2 mb-md-0">
           <h1 class="h3 mb-1" style="color: #D4B68A; font-weight: 700;">Gestión del Menú</h1>
           <p class="text-light mb-0">Administra los platos y categorías de tu restaurante</p>
         </div>
-        <div>
+        <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-md-auto">
           <a href="<?= site_url('admin/categorias') ?>" class="admin-btn-secondary">
             <i class="bi bi-tags"></i> Gestionar Categorías
           </a>
@@ -283,5 +291,29 @@
     }
   });
 </script>
+
+<!-- Footer Admin -->
+<footer class="text-center text-light py-4 mt-5" style="background-color: #1a1a1a; border-top: 2px solid #D4B68A;">
+    <div class="container">
+        <div class="d-flex justify-content-center align-items-center gap-4 flex-wrap">
+            <a href="https://docs.google.com/spreadsheets" target="_blank" class="text-decoration-none" title="Google Sheets">
+                <i class="bi bi-file-earmark-excel" style="font-size: 1.8rem; color: #1D6F42;"></i>
+            </a>
+            <a href="https://docs.google.com/document" target="_blank" class="text-decoration-none" title="Google Docs">
+                <i class="bi bi-file-earmark-word" style="font-size: 1.8rem; color: #2B579A;"></i>
+            </a>
+            <a href="https://hpanel.hostinger.com" target="_blank" class="text-decoration-none" title="Hostinger Panel">
+                <i class="bi bi-hdd-rack" style="font-size: 1.8rem; color: #673DE6;"></i>
+            </a>
+            <a href="https://mail.google.com" target="_blank" class="text-decoration-none" title="Gmail">
+                <i class="bi bi-envelope" style="font-size: 1.8rem; color: #D93025;"></i>
+            </a>
+            <a href="https://www.instagram.com/aido_agenciaweb/" target="_blank" class="text-decoration-none" title="Soporte Técnico">
+                <i class="bi bi-life-preserver" style="font-size: 1.8rem; color: #D4B68A;"></i>
+            </a>
+        </div>
+        <p class="mb-0 mt-3 small" style="color: #999;">© 2025 La Bartola | Panel Administrativo</p>
+    </div>
+</footer>
 
 <?= $this->endSection() ?>

@@ -1107,40 +1107,34 @@
       hideLoading();
 
       // Construir el mensaje para WhatsApp
-      let mensaje = `*🍽️ NUEVO PEDIDO - LA BARTOLA*\n\n`;
-      mensaje += `👤 *Nombre:* ${nombre}\n`;
-      mensaje += `📍 *Domicilio:* ${domicilio}\n`;
+      let mensaje = `Hola La Bartola! Quiero realizar un pedido\n\n`;
+      mensaje += `Nombre: ${nombre}\n`;
+      mensaje += `Dirección: ${domicilio}\n`;
       if (entreCalles) {
-        mensaje += `🗺️ *Entre calles:* ${entreCalles}\n`;
+        mensaje += `Entre calles: ${entreCalles}\n`;
       }
       if (comentarios) {
-        mensaje += `💬 *Comentarios:* ${comentarios}\n`;
+        mensaje += `Nota: ${comentarios}\n`;
       }
 
       // Agregar forma de pago con emoji correspondiente
       const formasPagoTexto = {
-        'efectivo': '💵 Efectivo',
-        'mercado_pago': '💳 Mercado Pago',
-        'transferencia': '🏦 Transferencia',
-        'qr': '📱 QR'
+        'efectivo': 'Efectivo',
+        'mercado_pago': 'Mercado Pago',
+        'transferencia': 'Transferencia',
+        'qr': 'QR'
       };
-      mensaje += `💰 *Forma de Pago:* ${formasPagoTexto[formaPago] || formaPago}\n`;
+      mensaje += `Pago: ${formasPagoTexto[formaPago] || formaPago}\n\n`;
 
-      mensaje += `\n*📋 DETALLE DEL PEDIDO:*\n`;
-      mensaje += `━━━━━━━━━━━━━━━━\n`;
-
+      mensaje += `Mi Pedido:\n`;
+      
       // Agregar items del carrito
       Object.keys(carritoItems).forEach(platoId => {
         const item = carritoItems[platoId];
-        const subtotal = item.precio * item.cantidad;
-        mensaje += `\n🔸 *${item.nombre}*\n`;
-        mensaje += `   Cantidad: ${item.cantidad}\n`;
-        mensaje += `   Precio: $${item.precio.toLocaleString('es-AR')}\n`;
-        mensaje += `   Subtotal: $${subtotal.toLocaleString('es-AR')}\n`;
+        mensaje += `${item.cantidad}x ${item.nombre}\n`;
       });
 
-      mensaje += `\n━━━━━━━━━━━━━━━━\n`;
-      mensaje += `*💰 TOTAL: $${carritoTotal.toLocaleString('es-AR')}*`;
+      mensaje += `\nTotal: $${carritoTotal.toLocaleString('es-AR')}`;
 
       // Codificar el mensaje para URL
       const mensajeCodificado = encodeURIComponent(mensaje);

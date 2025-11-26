@@ -305,6 +305,11 @@ class Carrito extends Controller
             $precioReal = $plato['precio'];
             $subtotal = $precioReal * $item['cantidad'];
 
+            // Establecer zona horaria de Buenos Aires para los timestamps
+            $timezone = new \DateTimeZone('America/Argentina/Buenos_Aires');
+            $now = new \DateTime('now', $timezone);
+            $timestamp = $now->format('Y-m-d H:i:s');
+            
             $pedidoData = [
                 'usuario_id' => null,
                 'plato_id' => $plato_id,
@@ -314,7 +319,9 @@ class Carrito extends Controller
                 'tipo_entrega' => $tipo_entrega,
                 'direccion' => $direccion,
                 'forma_pago' => $forma_pago,
-                'notas' => $notas
+                'notas' => $notas,
+                'created_at' => $timestamp,
+                'updated_at' => $timestamp,
             ];
 
             $db->table('pedidos')->insert($pedidoData);

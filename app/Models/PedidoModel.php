@@ -22,9 +22,11 @@ class PedidoModel extends Model
         'tipo_entrega',  // Agregado
         'direccion',     // Agregado
         'forma_pago',    // Agregado
+        'created_at',    // Agregado para control manual de zona horaria
+        'updated_at',    // Agregado para control manual de zona horaria
     ];
 
-    protected $useTimestamps = true;
+    protected $useTimestamps = false; // Desactivado para control manual
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';
 

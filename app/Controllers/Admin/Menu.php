@@ -223,6 +223,7 @@ class Menu extends BaseController
 
     public function obtenerPlatos()
     {
+        // Obtener SOLO los platos disponibles del menú
         $platos = $this->platoModel
             ->select('id, nombre, precio, categoria, disponible, stock, stock_ilimitado')
             ->where('disponible', 1)

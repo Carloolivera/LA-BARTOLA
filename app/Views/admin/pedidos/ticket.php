@@ -109,8 +109,8 @@
     <div class="header">
         <h1>LA BARTOLA</h1>
         <p>Casa de Comidas</p>
-        <p>Tel: (XXX) XXX-XXXX</p>
-        <p>Dirección: Tu dirección aquí</p>
+        <p>Tel: 2241 51-7665</p>
+        <p>Jorge Newbery 356, Chascomús</p>
     </div>
 
     <div class="info-section">
@@ -154,16 +154,25 @@
             <span><strong>Producto</strong></span>
             <span><strong>Subtotal</strong></span>
         </div>
-        <div class="item-row">
-            <span><?= esc($pedido['plato_nombre']) ?> x<?= $pedido['cantidad'] ?></span>
-            <span>$<?= number_format($pedido['total'], 2) ?></span>
-        </div>
+        <?php if (isset($items) && !empty($items)): ?>
+            <?php foreach ($items as $item): ?>
+            <div class="item-row">
+                <span><?= $item['cantidad'] ?>x <?= esc($item['plato_nombre']) ?></span>
+                <span>$<?= number_format($item['total'], 2) ?></span>
+            </div>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <div class="item-row">
+                <span><?= $pedido['cantidad'] ?>x <?= esc($pedido['plato_nombre']) ?></span>
+                <span>$<?= number_format($pedido['total'], 2) ?></span>
+            </div>
+        <?php endif; ?>
     </div>
 
     <div class="total-section">
         <div class="total-row">
             <span>TOTAL:</span>
-            <span>$<?= number_format($pedido['total'], 2) ?></span>
+            <span>$<?= number_format($pedido['total_grupo'] ?? $pedido['total'], 2) ?></span>
         </div>
     </div>
 

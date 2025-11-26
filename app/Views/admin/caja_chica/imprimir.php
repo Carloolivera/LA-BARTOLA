@@ -110,7 +110,20 @@
                     <tr>
                         <td><?= date('d/m/Y', strtotime($mov['fecha'])) ?></td>
                         <td><?= date('H:i', strtotime($mov['hora'])) ?></td>
-                        <td><?= esc($mov['concepto']) ?></td>
+                        <?php
+                        // Procesar el concepto para eliminar "Pedido" y mostrar formato limpio
+                        $conceptoMostrar = $mov['concepto'];
+                        
+                        // Si es un pedido, extraer solo número y nombre
+                        if (preg_match('/Pedido #(\d+) - (.+?) \(/', $mov['concepto'], $matches)) {
+                            $conceptoMostrar = '#' . $matches[1] . ' - ' . $matches[2];
+                        }
+                        
+                        // Agregar método de pago tanto en entradas como en salidas
+                        $metodo = (!empty($mov['es_digital']) && $mov['es_digital'] == 1) ? ' [Digital]' : ' [Efectivo]';
+                        $conceptoMostrar .= $metodo;
+                        ?>
+                        <td><?= esc($conceptoMostrar) ?></td>
                         <td class="text-right">
                             <?= $mov['tipo'] === 'entrada' ? number_format($mov['monto'], 2) : '0.00' ?>
                         </td>
@@ -124,7 +137,7 @@
         </tbody>
         <tfoot>
             <tr class="totales">
-                <td colspan="3" class="text-right">Total Entradas (*):</td>
+                <td colspan="3" class="text-right">Total Entradas:</td>
                 <td class="text-right"><?= number_format($entradas, 2) ?></td>
                 <td colspan="2"></td>
             </tr>
@@ -138,7 +151,7 @@
 
     <div class="resumen">
         <div class="resumen-item">
-            <div class="resumen-label">(*) Total Efectivo:</div>
+            <div class="resumen-label">Total Efectivo:</div>
             <div class="resumen-valor"><?= number_format($efectivo, 2) ?></div>
         </div>
         <div class="resumen-item">

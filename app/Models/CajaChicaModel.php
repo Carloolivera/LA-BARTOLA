@@ -80,7 +80,7 @@ class CajaChicaModel extends Model
     public function getMovimientosPorFecha($fecha)
     {
         return $this->where('fecha', $fecha)
-                    ->orderBy('hora', 'ASC')
+                    ->orderBy('hora', 'DESC')
                     ->findAll();
     }
 

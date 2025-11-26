@@ -63,7 +63,7 @@
                                         </td>
                                         <td class="text-center">
                                             <button class="btn btn-sm btn-outline-warning me-1"
-                                                    onclick="editarCategoria(<?= $cat['id'] ?>, '<?= esc($cat['nombre']) ?>', <?= $cat['orden'] ?>, <?= $cat['activa'] ?>)"
+                                                    onclick="editarCategoria(<?= $cat['id'] ?>, '<?= addslashes(esc($cat['nombre'])) ?>', '<?= addslashes(esc($cat['descripcion'] ?? '')) ?>', <?= $cat['orden'] ?>, <?= $cat['activa'] ?>)"
                                                     title="Editar">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
@@ -138,6 +138,11 @@
                         <input type="text" class="form-control" id="editarNombre" required>
                     </div>
                     <div class="mb-3">
+                        <label for="editarDescripcion" class="form-label">Descripción (opcional)</label>
+                        <textarea class="form-control" id="editarDescripcion" rows="2" placeholder="Descripción breve de la categoría"></textarea>
+                        <small class="text-light" style="opacity: 0.7;">Aparecerá debajo del nombre de la categoría en el menú público</small>
+                    </div>
+                    <div class="mb-3">
                         <label for="editarOrden" class="form-label">Orden</label>
                         <input type="number" class="form-control" id="editarOrden" min="0">
                     </div>
@@ -204,9 +209,10 @@ function crearCategoria() {
     });
 }
 
-function editarCategoria(id, nombre, orden, activa) {
+function editarCategoria(id, nombre, descripcion, orden, activa) {
     document.getElementById('editarCategoriaId').value = id;
     document.getElementById('editarNombre').value = nombre;
+    document.getElementById('editarDescripcion').value = descripcion || '';
     document.getElementById('editarOrden').value = orden;
     new bootstrap.Modal(document.getElementById('modalEditarCategoria')).show();
 }
@@ -214,6 +220,7 @@ function editarCategoria(id, nombre, orden, activa) {
 function actualizarCategoria() {
     const id = document.getElementById('editarCategoriaId').value;
     const nombre = document.getElementById('editarNombre').value.trim();
+    const descripcion = document.getElementById('editarDescripcion').value.trim();
     const orden = document.getElementById('editarOrden').value;
 
     if (!nombre) {
@@ -229,6 +236,7 @@ function actualizarCategoria() {
         },
         body: new URLSearchParams({
             nombre: nombre,
+            descripcion: descripcion,
             orden: orden
         })
     })
@@ -302,5 +310,29 @@ function eliminarCategoria(id, nombre) {
     });
 }
 </script>
+
+<!-- Footer Admin -->
+<footer class="text-center text-light py-4 mt-5" style="background-color: #1a1a1a; border-top: 2px solid #D4B68A;">
+    <div class="container">
+        <div class="d-flex justify-content-center align-items-center gap-4 flex-wrap">
+            <a href="https://docs.google.com/spreadsheets" target="_blank" class="text-decoration-none" title="Google Sheets">
+                <i class="bi bi-file-earmark-excel" style="font-size: 1.8rem; color: #1D6F42;"></i>
+            </a>
+            <a href="https://docs.google.com/document" target="_blank" class="text-decoration-none" title="Google Docs">
+                <i class="bi bi-file-earmark-word" style="font-size: 1.8rem; color: #2B579A;"></i>
+            </a>
+            <a href="https://hpanel.hostinger.com" target="_blank" class="text-decoration-none" title="Hostinger Panel">
+                <i class="bi bi-hdd-rack" style="font-size: 1.8rem; color: #673DE6;"></i>
+            </a>
+            <a href="https://mail.google.com" target="_blank" class="text-decoration-none" title="Gmail">
+                <i class="bi bi-envelope" style="font-size: 1.8rem; color: #D93025;"></i>
+            </a>
+            <a href="https://www.instagram.com/aido_agenciaweb/" target="_blank" class="text-decoration-none" title="Soporte Técnico">
+                <i class="bi bi-life-preserver" style="font-size: 1.8rem; color: #D4B68A;"></i>
+            </a>
+        </div>
+        <p class="mb-0 mt-3 small" style="color: #999;">© 2025 La Bartola | Panel Administrativo</p>
+    </div>
+</footer>
 
 <?= $this->endSection() ?>
