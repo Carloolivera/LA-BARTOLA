@@ -1,0 +1,239 @@
+<?php
+
+namespace App\Controllers\Admin;
+
+use App\Controllers\BaseController;
+use App\Models\PlatoModel;
+use App\Models\CategoriaModel;
+use CodeIgniter\Database\Exceptions\DataException;
+
+class Menu extends BaseController
+{
+    protected $platoModel;
+    protected $categoriaModel;
+    protected $uploadPath;
+
+    public function __construct()
+    {
+        $this->platoModel = new PlatoModel();
+        $this->categoriaModel = new CategoriaModel();
+        // Carpeta de imágenes en public
+        $this->uploadPath = ROOTPATH . 'public/assets/images/platos';
+    }
+
+    public function index()
+    {
+        $platos = $this->platoModel
+            ->orderBy('categoria', 'ASC')
+            ->orderBy('nombre', 'ASC')
+            ->findAll();
+
+        $categorias = $this->categoriaModel->getActivas();
+
+        return view('admin/menu/index', [
+            'platos' => $platos,
+            'categorias' => $categorias
+        ]);
+    }
+
+    public function crear()
+    {
+        $auth = service('auth');
+        $user = $auth->user();
+        if (! $user || ! ($user->inGroup('admin') || $user->inGroup('vendedor'))) {
+            return redirect()->to('/login')->with('error', 'No autorizado');
+        }
+
+        $categorias = $this->categoriaModel->getActivas();
+
+        return view('admin/menu/crear', ['categorias' => $categorias]);
+    }
+
+    public function guardar()
+    {
+        $auth = service('auth');
+        $user = $auth->user();
+        if (! $user || ! ($user->inGroup('admin') || $user->inGroup('vendedor'))) {
+            return redirect()->to('/login')->with('error', 'No autorizado');
+        }
+
+        // Reglas del lado servidor
+        $rules = [
+            'nombre'  => 'required|min_length[3]|max_length[255]',
+            'precio'  => 'required|decimal|greater_than[0]',  // Precio debe ser > 0
+            'imagen'  => 'uploaded[imagen]|is_image[imagen]|max_size[imagen,2048]',  // Max 2MB
+            'stock'   => 'required|integer|greater_than_equal_to[0]',
+        ];
+
+        if (! $this->validate($rules)) {
+            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+
+        $stockIlimitado = $this->request->getPost('stock_ilimitado') ? 1 : 0;
+        $stock = (int) $this->request->getPost('stock');
+        $disponible = $this->request->getPost('disponible') ? 1 : 0;
+
+        // VALIDACIÓN: No permitir marcar como disponible si stock=0 y NO es ilimitado
+        if ($disponible == 1 && $stock == 0 && $stockIlimitado == 0) {
+            return redirect()->back()->withInput()->with('error', 'No puedes marcar un producto como disponible cuando el stock es 0. Por favor, aumenta el stock o marca el producto como "Stock Ilimitado".');
+        }
+
+        $data = [
+            'nombre'          => $this->request->getPost('nombre'),
+            'categoria'       => $this->request->getPost('categoria'),
+            'descripcion'     => $this->request->getPost('descripcion'),
+            'precio'          => $this->request->getPost('precio'),
+            'stock'           => $stock,
+            'stock_ilimitado' => $stockIlimitado,
+            'disponible'      => $disponible,
+        ];
+
+        // Manejo de imagen: nombre aleatorio (hash)
+        $img = $this->request->getFile('imagen');
+        if ($img && $img->isValid() && ! $img->hasMoved()) {
+            // getRandomName ya devuelve nombre aleatorio; prefiero prefix con tiempo para menor colisión
+            $newName = bin2hex(random_bytes(8)) . '_' . $img->getRandomName();
+            // Asegurar carpeta
+            if (! is_dir($this->uploadPath)) {
+                mkdir($this->uploadPath, 0755, true);
+            }
+            $img->move($this->uploadPath, $newName);
+            $data['imagen'] = $newName;
+        }
+
+        try {
+            $this->platoModel->insert($data);
+            // Limpiar caché de platos
+            cache()->delete('platos_disponibles');
+            return redirect()->to('/admin/menu')->with('success', 'Plato agregado correctamente');
+        } catch (DataException $e) {
+            return redirect()->back()->withInput()->with('error', 'Error al guardar: ' . $e->getMessage());
+        }
+    }
+
+    public function editar($id)
+    {
+        $auth = service('auth');
+        $user = $auth->user();
+        if (! $user || ! ($user->inGroup('admin') || $user->inGroup('vendedor'))) {
+            return redirect()->to('/login')->with('error', 'No autorizado');
+        }
+
+        $plato = $this->platoModel->find($id);
+        if (! $plato) {
+            return redirect()->to('/admin/menu')->with('error', 'Plato no encontrado');
+        }
+
+        $categorias = $this->categoriaModel->getActivas();
+
+        return view('admin/menu/editar', [
+            'plato' => $plato,
+            'categorias' => $categorias
+        ]);
+    }
+
+    public function actualizar($id)
+    {
+        $auth = service('auth');
+        $user = $auth->user();
+        if (! $user || ! ($user->inGroup('admin') || $user->inGroup('vendedor'))) {
+            return redirect()->to('/login')->with('error', 'No autorizado');
+        }
+
+        $rules = [
+            'nombre' => 'required|min_length[3]|max_length[255]',
+            'precio' => 'required|numeric',
+            'imagen' => 'permit_empty|is_image[imagen]',
+            'stock'  => 'required|integer|greater_than_equal_to[0]',
+        ];
+
+        if (! $this->validate($rules)) {
+            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+
+        $stockIlimitado = $this->request->getPost('stock_ilimitado') ? 1 : 0;
+        $stock = (int) $this->request->getPost('stock');
+        $disponible = $this->request->getPost('disponible') ? 1 : 0;
+
+        // VALIDACIÓN: No permitir marcar como disponible si stock=0 y NO es ilimitado
+        if ($disponible == 1 && $stock == 0 && $stockIlimitado == 0) {
+            return redirect()->back()->withInput()->with('error', 'No puedes marcar un producto como disponible cuando el stock es 0. Por favor, aumenta el stock o marca el producto como "Stock Ilimitado".');
+        }
+
+        $data = [
+            'nombre'          => $this->request->getPost('nombre'),
+            'categoria'       => $this->request->getPost('categoria'),
+            'descripcion'     => $this->request->getPost('descripcion'),
+            'precio'          => $this->request->getPost('precio'),
+            'stock'           => $stock,
+            'stock_ilimitado' => $stockIlimitado,
+            'disponible'      => $disponible,
+        ];
+
+        $img = $this->request->getFile('imagen');
+        if ($img && $img->isValid() && ! $img->hasMoved()) {
+            $newName = bin2hex(random_bytes(8)) . '_' . $img->getRandomName();
+            if (! is_dir($this->uploadPath)) {
+                mkdir($this->uploadPath, 0755, true);
+            }
+            $img->move($this->uploadPath, $newName);
+            $data['imagen'] = $newName;
+        }
+
+        try {
+            $this->platoModel->update($id, $data);
+            // Limpiar caché de platos
+            cache()->delete('platos_disponibles');
+            return redirect()->to('/admin/menu')->with('success', 'Plato actualizado correctamente');
+        } catch (DataException $e) {
+            return redirect()->back()->withInput()->with('error', 'Error al actualizar: ' . $e->getMessage());
+        }
+    }
+
+    public function eliminar($id)
+    {
+        $auth = service('auth');
+        $user = $auth->user();
+        if (! $user || ! ($user->inGroup('admin') || $user->inGroup('vendedor'))) {
+            return redirect()->to('/login')->with('error', 'No autorizado');
+        }
+
+        // Opcional: borrar archivo físico si existe
+        $plato = $this->platoModel->find($id);
+        if ($plato && ! empty($plato['imagen'])) {
+            // VALIDAR contra Path Traversal: No permitir ../ ni /
+            $imagen = basename($plato['imagen']); // Solo el nombre del archivo, sin rutas
+
+            if (strpos($imagen, '..') !== false || strpos($imagen, '/') !== false || strpos($imagen, '\\') !== false) {
+                log_message('warning', 'Menu::eliminar - Intento de Path Traversal detectado: ' . $plato['imagen']);
+            } else {
+                $path = $this->uploadPath . DIRECTORY_SEPARATOR . $imagen;
+                if (is_file($path) && file_exists($path)) {
+                    @unlink($path);
+                    log_message('info', 'Menu::eliminar - Imagen eliminada: ' . $path);
+                }
+            }
+        }
+
+        $this->platoModel->delete($id);
+        // Limpiar caché de platos
+        cache()->delete('platos_disponibles');
+        return redirect()->to('/admin/menu')->with('success', 'Plato eliminado correctamente');
+    }
+
+    public function obtenerPlatos()
+    {
+        // Obtener SOLO los platos disponibles del menú
+        $platos = $this->platoModel
+            ->select('id, nombre, precio, categoria, disponible, stock, stock_ilimitado')
+            ->where('disponible', 1)
+            ->orderBy('categoria', 'ASC')
+            ->orderBy('nombre', 'ASC')
+            ->findAll();
+
+        return $this->response->setJSON([
+            'success' => true,
+            'platos' => $platos
+        ]);
+    }
+}

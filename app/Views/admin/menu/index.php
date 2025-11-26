@@ -59,7 +59,15 @@
     padding: 8px 20px;
     border-radius: 8px;
     font-weight: 500;
-    margin-left: 10px;
+  }
+
+  @media (max-width: 576px) {
+    .admin-btn-primary,
+    .admin-btn-secondary {
+      width: 100%;
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
   }
 
   .admin-btn-secondary:hover {
@@ -103,12 +111,12 @@
 <section class="admin-menu-section">
   <div class="container">
     <div class="mb-4">
-      <div class="d-flex justify-content-between align-items-center flex-wrap">
-        <div class="mb-3 mb-md-0">
+      <div class="d-flex justify-content-between align-items-start align-items-md-center flex-wrap gap-3">
+        <div class="mb-2 mb-md-0">
           <h1 class="h3 mb-1" style="color: #D4B68A; font-weight: 700;">Gestión del Menú</h1>
           <p class="text-light mb-0">Administra los platos y categorías de tu restaurante</p>
         </div>
-        <div>
+        <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-md-auto">
           <a href="<?= site_url('admin/categorias') ?>" class="admin-btn-secondary">
             <i class="bi bi-tags"></i> Gestionar Categorías
           </a>
@@ -180,9 +188,9 @@
                   <a href="<?= site_url('admin/menu/editar/' . $plato['id']) ?>" class="btn btn-sm btn-outline-warning flex-fill">
                     <i class="bi bi-pencil"></i> Editar
                   </a>
-                  <a href="<?= site_url('admin/menu/eliminar/' . $plato['id']) ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Eliminar este plato?')">
+                  <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmarEliminarPlato(<?= $plato['id'] ?>, '<?= addslashes(esc($plato['nombre'])) ?>')">
                     <i class="bi bi-trash"></i> Eliminar
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
@@ -193,7 +201,61 @@
   </div>
 </section>
 
+<!-- Modal de confirmación para eliminar plato -->
+<div class="modal fade" id="modalEliminarPlato" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background: #1a1a1a; border: 2px solid #D4B68A;">
+      <div class="modal-header" style="border-bottom: 1px solid #D4B68A;">
+        <h5 class="modal-title" style="color: #D4B68A;">
+          <i class="bi bi-exclamation-triangle"></i> Confirmar Eliminación
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" style="color: #fff;">
+        <p>¿Estás seguro de que deseas eliminar el plato <strong id="nombrePlatoEliminar" style="color: #D4B68A;"></strong>?</p>
+        <p class="text-danger mb-0"><small>Esta acción no se puede deshacer.</small></p>
+      </div>
+      <div class="modal-footer" style="border-top: 1px solid #D4B68A;">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <a href="#" id="btnConfirmarEliminar" class="btn btn-danger">
+          <i class="bi bi-trash"></i> Eliminar Plato
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
+  // Guardar posición del scroll antes de eliminar
+  let scrollPosition = 0;
+
+  // Función para confirmar eliminación
+  function confirmarEliminarPlato(id, nombre) {
+    // Guardar posición actual del scroll
+    scrollPosition = window.scrollY || window.pageYOffset;
+
+    // Actualizar el nombre del plato en el modal
+    document.getElementById('nombrePlatoEliminar').textContent = nombre;
+
+    // Actualizar el enlace de eliminación
+    const btnEliminar = document.getElementById('btnConfirmarEliminar');
+    btnEliminar.href = '<?= site_url("admin/menu/eliminar/") ?>/' + id;
+
+    // Mostrar el modal
+    const modal = new bootstrap.Modal(document.getElementById('modalEliminarPlato'));
+    modal.show();
+  }
+
+  // Restaurar posición del scroll después de cerrar el modal
+  document.getElementById('modalEliminarPlato').addEventListener('hidden.bs.modal', function () {
+    if (scrollPosition > 0) {
+      window.scrollTo({
+        top: scrollPosition,
+        behavior: 'instant'
+      });
+    }
+  });
+
   // Filtro por categorías
   document.querySelectorAll('.filter-tab').forEach(tab => {
     tab.addEventListener('click', function() {
@@ -214,6 +276,44 @@
       });
     });
   });
+
+  // Restaurar scroll después de redirigir
+  window.addEventListener('load', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const scroll = urlParams.get('scroll');
+    if (scroll) {
+      window.scrollTo({
+        top: parseInt(scroll),
+        behavior: 'instant'
+      });
+      // Limpiar el parámetro de la URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  });
 </script>
+
+<!-- Footer Admin -->
+<footer class="text-center text-light py-4 mt-5" style="background-color: #1a1a1a; border-top: 2px solid #D4B68A;">
+    <div class="container">
+        <div class="d-flex justify-content-center align-items-center gap-4 flex-wrap">
+            <a href="https://docs.google.com/spreadsheets" target="_blank" class="text-decoration-none" title="Google Sheets">
+                <i class="bi bi-file-earmark-excel" style="font-size: 1.8rem; color: #1D6F42;"></i>
+            </a>
+            <a href="https://docs.google.com/document" target="_blank" class="text-decoration-none" title="Google Docs">
+                <i class="bi bi-file-earmark-word" style="font-size: 1.8rem; color: #2B579A;"></i>
+            </a>
+            <a href="https://hpanel.hostinger.com" target="_blank" class="text-decoration-none" title="Hostinger Panel">
+                <i class="bi bi-hdd-rack" style="font-size: 1.8rem; color: #673DE6;"></i>
+            </a>
+            <a href="https://mail.google.com" target="_blank" class="text-decoration-none" title="Gmail">
+                <i class="bi bi-envelope" style="font-size: 1.8rem; color: #D93025;"></i>
+            </a>
+            <a href="https://www.instagram.com/aido_agenciaweb/" target="_blank" class="text-decoration-none" title="Soporte Técnico">
+                <i class="bi bi-life-preserver" style="font-size: 1.8rem; color: #D4B68A;"></i>
+            </a>
+        </div>
+        <p class="mb-0 mt-3 small" style="color: #999;">© 2025 La Bartola | Panel Administrativo</p>
+    </div>
+</footer>
 
 <?= $this->endSection() ?>

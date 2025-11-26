@@ -65,4 +65,37 @@ class NotificacionModel extends Model
                     ->set(['leida' => 1])
                     ->update();
     }
+
+    /**
+     * Crear una nueva notificación
+     *
+     * @param array $data Datos de la notificación: usuario_id, tipo, titulo, mensaje, icono, url, leida, data
+     * @return int|false ID de la notificación creada o false si falla
+     */
+    public function crearNotificacion($data)
+    {
+        // Mapear campos si vienen con nombres diferentes
+        $notificacion = [
+            'user_id' => $data['usuario_id'] ?? $data['user_id'] ?? null,
+            'tipo'    => $data['tipo'] ?? 'general',
+            'titulo'  => $data['titulo'] ?? '',
+            'mensaje' => $data['mensaje'] ?? '',
+            'icono'   => $data['icono'] ?? 'bi-bell',
+            'url'     => $data['url'] ?? '',
+            'leida'   => $data['leida'] ?? 0,
+        ];
+
+        // Validar que al menos haya un user_id
+        if (empty($notificacion['user_id'])) {
+            log_message('error', 'NotificacionModel::crearNotificacion - user_id es requerido');
+            return false;
+        }
+
+        try {
+            return $this->insert($notificacion);
+        } catch (\Exception $e) {
+            log_message('error', 'NotificacionModel::crearNotificacion - Error: ' . $e->getMessage());
+            return false;
+        }
+    }
 }

@@ -16,6 +16,10 @@
                    class="btn btn-secondary btn-sm">
                     <i class="bi bi-folder"></i> Archivo
                 </a>
+                <a href="<?= base_url('admin/caja-chica/exportarExcel/' . $fecha) ?>"
+                   class="btn btn-success btn-sm">
+                    <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+                </a>
                 <a href="<?= base_url('admin/caja-chica/imprimir/' . $fecha) ?>"
                    target="_blank"
                    class="btn btn-warning btn-sm">
@@ -44,7 +48,7 @@
             <div class="col-md-4">
                 <div class="card bg-success text-white">
                     <div class="card-body text-center">
-                        <p class="card-text mb-1 small">(*) Total Efectivo</p>
+                        <p class="card-text mb-1 small">Total Efectivo</p>
                         <h3 class="mb-0">$<?= number_format($efectivo, 2) ?></h3>
                     </div>
                 </div>
@@ -77,30 +81,30 @@
                 <form action="<?= base_url('admin/caja-chica/agregar') ?>" method="POST">
                     <?= csrf_field() ?>
                     <div class="row g-3">
-                        <div class="col-md-2">
+                        <div class="col-6 col-md-2">
                             <label class="form-label small">Fecha</label>
                             <input type="date" name="fecha" id="inputFecha" value="<?= $fecha ?>" required
                                    class="form-control form-control-sm" readonly>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-6 col-md-2">
                             <label class="form-label small">Hora</label>
                             <input type="time" name="hora" id="inputHora" value="<?= date('H:i') ?>" required
                                    class="form-control form-control-sm">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-12 col-md-4">
                             <label class="form-label small">Concepto</label>
                             <input type="text" name="concepto" required
                                    class="form-control form-control-sm"
                                    placeholder="Descripción del movimiento">
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-6 col-md-2">
                             <label class="form-label small">Tipo</label>
                             <select name="tipo" required class="form-select form-select-sm">
                                 <option value="entrada">Entrada</option>
                                 <option value="salida">Salida</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-6 col-md-2">
                             <label class="form-label small">Monto</label>
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text">$</span>
@@ -108,17 +112,18 @@
                                        class="form-control form-control-sm">
                             </div>
                         </div>
-                        <div class="col-md-2 d-flex align-items-end">
-                            <div class="form-check mb-2">
+                        <div class="col-12 col-md-3">
+                            <label class="form-label small d-block">Método de Pago</label>
+                            <div class="form-check form-check-inline">
                                 <input class="form-check-input" type="checkbox" name="es_digital" value="1" id="esDigital">
                                 <label class="form-check-label small" for="esDigital">
-                                    Dinero Digital
+                                    <i class="bi bi-phone"></i> Dinero Digital
                                 </label>
                             </div>
                         </div>
-                        <div class="col-12 col-md-auto d-flex align-items-end">
-                            <button type="submit" class="btn btn-success btn-sm w-100">
-                                <i class="bi bi-check-lg"></i> Agregar
+                        <div class="col-12 col-md-3">
+                            <button type="submit" class="btn btn-success btn-sm w-100 mt-md-4">
+                                <i class="bi bi-check-lg"></i> Agregar Movimiento
                             </button>
                         </div>
                     </div>
@@ -126,6 +131,7 @@
             </div>
         </div>
         <?php endif; ?>
+
 
         <!-- Tabla de Movimientos -->
         <div class="card bg-dark text-light">
@@ -137,15 +143,10 @@
                     <table class="table table-dark table-striped table-hover mb-0">
                         <thead style="background-color: #2a2a2a;">
                             <tr>
-                                <th class="d-none d-md-table-cell" style="color: #D4B68A;">Fecha</th>
-                                <th style="color: #D4B68A;">Hora</th>
-                                <th style="color: #D4B68A;">Concepto</th>
+                                <th style="color: #D4B68A;">Hora / Detalle</th>
                                 <th class="text-end" style="color: #D4B68A;">Entrada</th>
                                 <th class="text-end" style="color: #D4B68A;">Salida</th>
-                                <th class="text-end" style="color: #D4B68A;">Saldo</th>
-                                <?php if ($esHoy): ?>
-                                <th class="text-center" style="color: #D4B68A;">Acciones</th>
-                                <?php endif; ?>
+                                <th class="text-end d-none d-md-table-cell" style="color: #D4B68A;">Saldo</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -154,7 +155,7 @@
                             if (empty($movimientos)):
                             ?>
                                 <tr>
-                                    <td colspan="<?= $esHoy ? 7 : 6 ?>" class="text-center py-4 text-light" style="opacity: 0.7;">
+                                    <td colspan="4" class="text-center py-4 text-light" style="opacity: 0.7;">
                                         <i class="bi bi-inbox"></i> No hay movimientos para esta fecha
                                     </td>
                                 </tr>
@@ -166,59 +167,167 @@
                                     } else {
                                         $saldoAcumulado -= $mov['monto'];
                                     }
+                                    
+                                    // Extraer número de pedido del concepto si existe
+                                    preg_match('/Pedido #(\d+)/', $mov['concepto'], $matches);
+                                    $numPedido = isset($matches[1]) ? '#' . $matches[1] : '';
+                                    
+                                    // Extraer nombre del cliente
+                                    preg_match('/- (.+?) \(/', $mov['concepto'], $matchesNombre);
+                                    $nombreCliente = isset($matchesNombre[1]) ? $matchesNombre[1] : '';
+                                    
+                                    // Extraer método de pago
+                                    preg_match('/\((.+?)\)/', $mov['concepto'], $matchesPago);
+                                    $metodoPago = isset($matchesPago[1]) ? $matchesPago[1] : '';
+                                    
+                                    // Si no es un pedido, mostrar el concepto completo
+                                    $esPedido = !empty($numPedido);
                                     ?>
                                     <tr>
-                                        <td class="d-none d-md-table-cell small text-light">
-                                            <?= date('d/m/Y', strtotime($mov['fecha'])) ?>
+                                        <td class="small text-light">
+                                            <div><strong><?= date('H:i', strtotime($mov['hora'])) ?></strong></div>
+                                            <div class="text-white" style="font-size: 0.85rem;">
+                                                <?php if ($esPedido): ?>
+                                                    <?php if ($numPedido): ?>
+                                                        <span class="text-warning"><?= $numPedido ?></span>
+                                                    <?php endif; ?>
+                                                    <?php if ($nombreCliente): ?>
+                                                        - <?= esc($nombreCliente) ?>
+                                                    <?php endif; ?>
+                                                <?php else: ?>
+                                                    <?= esc($mov['concepto']) ?>
+                                                <?php endif; ?>
+                                            </div>
+                                            <?php if ($esPedido && $metodoPago): ?>
+                                                <div>
+                                                    <?php if (!empty($mov['es_digital']) && $mov['es_digital'] == 1): ?>
+                                                        <span class="badge bg-info text-dark" style="font-size: 0.7rem;">
+                                                            <i class="bi bi-phone"></i> <?= esc($metodoPago) ?>
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-success" style="font-size: 0.7rem;">
+                                                            <i class="bi bi-cash"></i> <?= esc($metodoPago) ?>
+                                                        </span>
+                                                    <?php endif; ?>
+                                                </div>
+                                            <?php elseif (!$esPedido): ?>
+                                                <div>
+                                                    <?php if (!empty($mov['es_digital']) && $mov['es_digital'] == 1): ?>
+                                                        <span class="badge bg-info text-dark" style="font-size: 0.7rem;">
+                                                            <i class="bi bi-phone"></i> Dinero Digital
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-success" style="font-size: 0.7rem;">
+                                                            <i class="bi bi-cash"></i> Efectivo
+                                                        </span>
+                                                    <?php endif; ?>
+                                                </div>
+                                            <?php endif; ?>
                                         </td>
-                                        <td class="small text-light"><?= date('H:i', strtotime($mov['hora'])) ?></td>
-                                        <td class="small text-light"><?= esc($mov['concepto']) ?></td>
                                         <td class="text-end fw-bold" style="color: #28a745;">
                                             <?= $mov['tipo'] === 'entrada' ? '$' . number_format($mov['monto'], 2) : '-' ?>
                                         </td>
                                         <td class="text-end fw-bold" style="color: #dc3545;">
                                             <?= $mov['tipo'] === 'salida' ? '$' . number_format($mov['monto'], 2) : '-' ?>
                                         </td>
-                                        <td class="text-end fw-bold" style="color: #D4B68A;">
+                                        <td class="text-end fw-bold d-none d-md-table-cell" style="color: #D4B68A;">
                                             $<?= number_format($saldoAcumulado, 2) ?>
                                         </td>
-                                        <?php if ($esHoy): ?>
-                                        <td class="text-center">
-                                            <a href="<?= base_url('admin/caja-chica/editar/' . $mov['id']) ?>"
-                                               class="btn btn-sm btn-outline-warning me-1"
-                                               title="Editar">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                            <a href="<?= base_url('admin/caja-chica/eliminar/' . $mov['id']) ?>"
-                                               onclick="return confirm('¿Eliminar este movimiento?')"
-                                               class="btn btn-sm btn-outline-danger"
-                                               title="Eliminar">
-                                                <i class="bi bi-trash"></i>
-                                            </a>
-                                        </td>
-                                        <?php endif; ?>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </tbody>
                         <tfoot style="background-color: #2a2a2a;">
                             <tr class="fw-bold">
-                                <td colspan="<?= $esHoy ? 3 : 2 ?>" class="text-end" style="color: #fff;">Total Entradas (*):</td>
+                                <td class="text-end" style="color: #fff;">Total Entradas:</td>
                                 <td class="text-end text-success">$<?= number_format($entradas, 2) ?></td>
-                                <td colspan="<?= $esHoy ? 3 : 2 ?>"></td>
+                                <td colspan="2"></td>
                             </tr>
                             <tr class="fw-bold">
-                                <td colspan="<?= $esHoy ? 3 : 2 ?>" class="text-end" style="color: #fff;">Total Salidas:</td>
-                                <td colspan="2" class="text-end text-danger">$<?= number_format($salidas, 2) ?></td>
-                                <td colspan="<?= $esHoy ? 2 : 1 ?>"></td>
+                                <td class="text-end" style="color: #fff;">Total Salidas:</td>
+                                <td></td>
+                                <td class="text-end text-danger">$<?= number_format($salidas, 2) ?></td>
+                                <td class="d-none d-md-table-cell"></td>
                             </tr>
                         </tfoot>
+
                     </table>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Footer Admin -->
+    <footer class="text-center text-light py-4 mt-5" style="background-color: #1a1a1a; border-top: 2px solid #D4B68A;">
+        <div class="container">
+            <div class="d-flex justify-content-center align-items-center gap-4 flex-wrap">
+                <a href="https://docs.google.com/spreadsheets" target="_blank" class="text-decoration-none" title="Google Sheets">
+                    <i class="bi bi-file-earmark-excel" style="font-size: 1.8rem; color: #1D6F42;"></i>
+                </a>
+                <a href="https://docs.google.com/document" target="_blank" class="text-decoration-none" title="Google Docs">
+                    <i class="bi bi-file-earmark-word" style="font-size: 1.8rem; color: #2B579A;"></i>
+                </a>
+                <a href="https://hpanel.hostinger.com" target="_blank" class="text-decoration-none" title="Hostinger Panel">
+                    <i class="bi bi-hdd-rack" style="font-size: 1.8rem; color: #673DE6;"></i>
+                </a>
+                <a href="https://mail.google.com" target="_blank" class="text-decoration-none" title="Gmail">
+                    <i class="bi bi-envelope" style="font-size: 1.8rem; color: #D93025;"></i>
+                </a>
+                <a href="https://www.instagram.com/aido_agenciaweb/" target="_blank" class="text-decoration-none" title="Soporte Técnico">
+                    <i class="bi bi-life-preserver" style="font-size: 1.8rem; color: #D4B68A;"></i>
+                </a>
+            </div>
+            <p class="mb-0 mt-3 small" style="color: #999;">© 2025 La Bartola | Panel Administrativo</p>
+        </div>
+    </footer>
 </section>
+
+<!-- Modal de Confirmación para Eliminar -->
+<div class="modal fade" id="modalEliminar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light" style="border: 2px solid #D4B68A;">
+            <div class="modal-header" style="border-bottom: 1px solid #D4B68A;">
+                <h5 class="modal-title" style="color: #D4B68A;">
+                    <i class="bi bi-exclamation-triangle"></i> Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">¿Estás seguro de que deseas eliminar este movimiento?</p>
+                <p class="text-warning mt-2 mb-0" id="conceptoEliminar"></p>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid #D4B68A;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <a href="#" id="btnConfirmarEliminar" class="btn btn-danger">
+                    <i class="bi bi-trash"></i> Eliminar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación para Editar -->
+<div class="modal fade" id="modalEditar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light" style="border: 2px solid #D4B68A;">
+            <div class="modal-header" style="border-bottom: 1px solid #D4B68A;">
+                <h5 class="modal-title" style="color: #D4B68A;">
+                    <i class="bi bi-pencil"></i> Confirmar Edición
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">¿Deseas editar este movimiento?</p>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid #D4B68A;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <a href="#" id="btnConfirmarEditar" class="btn btn-warning">
+                    <i class="bi bi-pencil"></i> Editar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 // Actualizar hora automáticamente
@@ -232,6 +341,21 @@ function actualizarHora() {
     if (inputHora) {
         inputHora.value = horaActual;
     }
+}
+
+// Confirmar eliminación de movimiento
+function confirmarEliminar(id, concepto) {
+    document.getElementById('conceptoEliminar').textContent = concepto;
+    document.getElementById('btnConfirmarEliminar').href = '<?= base_url('admin/caja-chica/eliminar/') ?>' + id;
+    const modal = new bootstrap.Modal(document.getElementById('modalEliminar'));
+    modal.show();
+}
+
+// Confirmar edición de movimiento
+function confirmarEditar(id) {
+    document.getElementById('btnConfirmarEditar').href = '<?= base_url('admin/caja-chica/editar/') ?>' + id;
+    const modal = new bootstrap.Modal(document.getElementById('modalEditar'));
+    modal.show();
 }
 
 // Actualizar fecha y hora al cargar la página

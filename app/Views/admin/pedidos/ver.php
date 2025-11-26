@@ -46,9 +46,9 @@ nombre'] ?>"
                      class="me-3">
               <?php endif; ?>
               <div>
-                <p class="mb-1"><strong><?= $pedido['plato_nombre'] ?></strong></p>
+                <p class="mb-1"><strong><?= esc($pedido['plato_nombre']) ?></strong></p>
                 <p class="mb-1">Cantidad: <?= $pedido['cantidad'] ?></p>
-                <p class="mb-1">Precio unitario: $<?= number_format($pedido['plato_precio'], 2) ?></p>
+                <p class="mb-1">Precio unitario: $<?= number_format($pedido['precio'], 2) ?></p>
                 <p class="mb-0"><strong style="color: #D4B68A;">Total: $<?= number_format($pedido['total'], 2) ?></strong></p>
               </div>
             </div>
@@ -60,7 +60,7 @@ nombre'] ?>"
         <div class="row">
           <div class="col-md-12">
             <h5 style="color: #D4B68A;">Notas del Pedido</h5>
-            <p style="white-space: pre-line;"><?= $pedido['notas'] ?></p>
+            <p style="white-space: pre-line;"><?= esc($pedido['notas'], 'html') ?></p>
           </div>
         </div>
 

@@ -1,0 +1,391 @@
+<?php
+
+namespace App\Controllers;
+
+use CodeIgniter\Controller;
+use App\Models\PlatoModel;
+use App\Models\NotificacionModel;
+
+class Carrito extends Controller
+{
+    protected $session;
+    protected $platoModel;
+    protected $notificacionModel;
+
+    public function __construct()
+    {
+        $this->session = \Config\Services::session();
+        $this->platoModel = new PlatoModel();
+        $this->notificacionModel = new NotificacionModel();
+    }
+
+    public function index()
+    {
+        $carrito = $this->session->get('carrito') ?? [];
+        $data['carrito'] = $carrito;
+        return view('carrito/index', $data);
+    }
+
+    public function agregar()
+    {
+        try {
+            $plato_id = $this->request->getPost('plato_id');
+            $cantidad = (int)$this->request->getPost('cantidad');
+
+            if (!$plato_id || !$cantidad) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Datos incompletos'
+                ]);
+            }
+
+            $plato = $this->platoModel->find($plato_id);
+
+            if (!$plato) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Plato no encontrado'
+                ]);
+            }
+
+            // Verificar disponibilidad
+            if (!$plato['disponible']) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Este plato no está disponible actualmente'
+                ]);
+            }
+
+            $carrito = $this->session->get('carrito') ?? [];
+
+            // Calcular cantidad total que tendría en el carrito
+            $cantidadActual = isset($carrito[$plato_id]) ? $carrito[$plato_id]['cantidad'] : 0;
+            $cantidadTotal = $cantidadActual + $cantidad;
+
+            // Verificar stock (solo si no es ilimitado)
+            if ($plato['stock_ilimitado'] == 0) {
+                if ($plato['stock'] <= 0) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Este plato está agotado'
+                    ]);
+                }
+
+                if ($cantidadTotal > $plato['stock']) {
+                    $disponible = $plato['stock'] - $cantidadActual;
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => "Solo puedes agregar {$disponible} unidad(es) más. Stock disponible: {$plato['stock']}"
+                    ]);
+                }
+            }
+
+            if (isset($carrito[$plato_id])) {
+                $carrito[$plato_id]['cantidad'] = $cantidadTotal;
+            } else {
+                $carrito[$plato_id] = [
+                    'nombre' => $plato['nombre'],
+                    'precio' => $plato['precio'],
+                    'cantidad' => $cantidad
+                ];
+            }
+
+            $this->session->set('carrito', $carrito);
+
+            $cart_count = array_sum(array_column($carrito, 'cantidad'));
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Plato agregado al carrito',
+                'cart_count' => $cart_count
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error en Carrito::agregar - ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al agregar al carrito: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function actualizar()
+    {
+        try {
+            $plato_id = $this->request->getPost('plato_id');
+            $cantidad = (int)$this->request->getPost('cantidad');
+
+            if ($cantidad < 1) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'La cantidad debe ser al menos 1'
+                ]);
+            }
+
+            $carrito = $this->session->get('carrito') ?? [];
+
+            if (!isset($carrito[$plato_id])) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Plato no encontrado en el carrito'
+                ]);
+            }
+
+            // Verificar stock del plato
+            $plato = $this->platoModel->find($plato_id);
+
+            if (!$plato) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Plato no encontrado'
+                ]);
+            }
+
+            // Verificar stock (solo si no es ilimitado)
+            if ($plato['stock_ilimitado'] == 0) {
+                if ($cantidad > $plato['stock']) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => "Stock insuficiente. Disponible: {$plato['stock']} unidad(es)"
+                    ]);
+                }
+            }
+
+            $carrito[$plato_id]['cantidad'] = $cantidad;
+            $this->session->set('carrito', $carrito);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Cantidad actualizada'
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error en Carrito::actualizar - ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al actualizar cantidad: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function eliminar()
+    {
+        try {
+            $plato_id = $this->request->getPost('plato_id');
+
+            log_message('info', 'Carrito::eliminar - Plato ID recibido: ' . $plato_id);
+
+            $carrito = $this->session->get('carrito') ?? [];
+
+            log_message('info', 'Carrito::eliminar - Carrito actual: ' . json_encode($carrito));
+            log_message('info', 'Carrito::eliminar - Session ID: ' . session_id());
+
+            if (isset($carrito[$plato_id])) {
+                unset($carrito[$plato_id]);
+                $this->session->set('carrito', $carrito);
+
+                log_message('info', 'Carrito::eliminar - Plato eliminado correctamente');
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Plato eliminado del carrito'
+                ]);
+            }
+
+            log_message('warning', 'Carrito::eliminar - Plato no encontrado. IDs en carrito: ' . implode(', ', array_keys($carrito)));
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Plato no encontrado en el carrito. ID buscado: ' . $plato_id . ', IDs en carrito: ' . implode(', ', array_keys($carrito))
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error en Carrito::eliminar - ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al eliminar producto: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function vaciar()
+    {
+        $this->session->remove('carrito');
+        return redirect()->to('/carrito')->with('success', 'Carrito vaciado');
+    }
+
+    public function finalizar()
+{
+    $isAjax = $this->request->isAJAX();
+
+    $carrito = $this->session->get('carrito') ?? [];
+
+    if (empty($carrito)) {
+        if ($isAjax) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'El carrito está vacío'
+            ]);
+        }
+        return redirect()->to('/carrito')->with('error', 'El carrito esta vacio');
+    }
+
+    // Los pedidos públicos no tienen usuario asociado
+    $usuarioId = null;
+
+    $nombre_cliente = esc($this->request->getPost('nombre_cliente'));
+    $tipo_entrega = esc($this->request->getPost('tipo_entrega'));
+    $direccion = esc($this->request->getPost('direccion'));
+    $forma_pago = esc($this->request->getPost('forma_pago'));
+
+    // Validar datos requeridos
+    if (empty($nombre_cliente) || empty($tipo_entrega) || empty($forma_pago)) {
+        if ($isAjax) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Todos los campos son obligatorios'
+            ]);
+        }
+        return redirect()->to('/carrito')->with('error', 'Todos los campos son obligatorios');
+    }
+
+    // Validar tipo de entrega
+    if (!in_array($tipo_entrega, ['retiro', 'delivery'])) {
+        return redirect()->to('/carrito')->with('error', 'Tipo de entrega inválido');
+    }
+
+    // Validar forma de pago
+    if (!in_array($forma_pago, ['efectivo', 'qr', 'mercado_pago', 'transferencia', 'tarjeta'])) {
+        return redirect()->to('/carrito')->with('error', 'Forma de pago inválida');
+    }
+
+    $db = db_connect();
+
+    // INICIAR TRANSACCIÓN PARA GARANTIZAR INTEGRIDAD DE DATOS
+    $db->transStart();
+
+    try {
+        // Validar stock disponible ANTES de crear pedidos
+        foreach ($carrito as $plato_id => $item) {
+            $plato = $this->platoModel->find($plato_id);
+
+            if (!$plato) {
+                $db->transRollback();
+                return redirect()->to('/carrito')->with('error', "El plato #{$plato_id} no existe");
+            }
+
+            // Verificar stock SOLO si NO es ilimitado
+            if ($plato['stock_ilimitado'] == 0 && $plato['stock'] < $item['cantidad']) {
+                $db->transRollback();
+                return redirect()->to('/carrito')->with('error', "Stock insuficiente para {$plato['nombre']}. Disponible: {$plato['stock']}");
+            }
+        }
+
+        // Calcular total del carrito (RECALCULAR EN SERVIDOR, NO CONFIAR EN CLIENTE)
+        $total = 0;
+        foreach ($carrito as $plato_id => $item) {
+            // OBTENER PRECIO DEL SERVIDOR, NO DEL CARRITO
+            $plato = $this->platoModel->find($plato_id);
+            $precioReal = $plato['precio'];
+            $subtotal = $precioReal * $item['cantidad'];
+            $total += $subtotal;
+        }
+
+        // Construir notas del pedido
+        $notas = "A nombre de: {$nombre_cliente}\n";
+        $notas .= "Tipo de entrega: {$tipo_entrega}\n";
+        if ($tipo_entrega === 'delivery' && !empty($direccion)) {
+            $notas .= "Direccion: {$direccion}\n";
+        }
+        $notas .= "Forma de pago: {$forma_pago}\n";
+
+        // Crear un pedido por cada plato en el carrito
+        $primer_pedido_id = null;
+
+        foreach ($carrito as $plato_id => $item) {
+            // OBTENER PRECIO REAL DEL SERVIDOR
+            $plato = $this->platoModel->find($plato_id);
+            $precioReal = $plato['precio'];
+            $subtotal = $precioReal * $item['cantidad'];
+
+            // Establecer zona horaria de Buenos Aires para los timestamps
+            $timezone = new \DateTimeZone('America/Argentina/Buenos_Aires');
+            $now = new \DateTime('now', $timezone);
+            $timestamp = $now->format('Y-m-d H:i:s');
+            
+            $pedidoData = [
+                'usuario_id' => null,
+                'plato_id' => $plato_id,
+                'cantidad' => $item['cantidad'],
+                'total' => $subtotal,
+                'estado' => 'pendiente',
+                'tipo_entrega' => $tipo_entrega,
+                'direccion' => $direccion,
+                'forma_pago' => $forma_pago,
+                'notas' => $notas,
+                'created_at' => $timestamp,
+                'updated_at' => $timestamp,
+            ];
+
+            $db->table('pedidos')->insert($pedidoData);
+            $pedido_id = $db->insertID();
+
+            if (!$primer_pedido_id) {
+                $primer_pedido_id = $pedido_id;
+            }
+
+            // Descontar stock y marcar como no disponible si se agota
+            if ($plato['stock_ilimitado'] == 0) {
+                $nuevoStock = $plato['stock'] - $item['cantidad'];
+
+                // Si el stock llega a 0 o menos, marcar como no disponible
+                $updateData = ['stock' => max(0, $nuevoStock)];
+
+                if ($nuevoStock <= 0) {
+                    $updateData['disponible'] = 0;
+                }
+
+                $this->platoModel->update($plato_id, $updateData);
+
+                // Limpiar caché de platos cuando cambia el stock
+                cache()->delete('platos_disponibles');
+            }
+        }
+
+        // COMPLETAR TRANSACCIÓN
+        $db->transComplete();
+
+        // Verificar si la transacción fue exitosa
+        if ($db->transStatus() === false) {
+            log_message('error', 'Carrito::finalizar - Error en transacción al crear pedido');
+            return redirect()->to('/carrito')->with('error', 'Error al procesar el pedido. Intente nuevamente.');
+        }
+
+        $pedido_id = $primer_pedido_id;
+
+        // Limpiar carrito de la sesión SOLO si todo fue exitoso
+        $this->session->remove('carrito');
+
+    } catch (\Exception $e) {
+        $db->transRollback();
+        log_message('error', 'Carrito::finalizar - Excepción: ' . $e->getMessage());
+        return redirect()->to('/carrito')->with('error', 'Error al procesar el pedido: ' . $e->getMessage());
+    }
+
+    // Si es una petición AJAX, devolver JSON
+    if ($this->request->isAJAX() || $forma_pago === 'qr') {
+        return $this->response->setJSON([
+            'success' => true,
+            'pedido_id' => $pedido_id,
+            'message' => 'Pedido realizado exitosamente'
+        ]);
+    }
+
+    return redirect()->to('/pedido')->with('success', 'Pedido realizado exitosamente');
+}
+
+    public function getCount()
+    {
+        $carrito = $this->session->get('carrito') ?? [];
+        $cart_count = array_sum(array_column($carrito, 'cantidad'));
+
+        return $this->response->setJSON(['cart_count' => $cart_count]);
+    }
+}

@@ -80,7 +80,7 @@ class CajaChicaModel extends Model
     public function getMovimientosPorFecha($fecha)
     {
         return $this->where('fecha', $fecha)
-                    ->orderBy('hora', 'ASC')
+                    ->orderBy('hora', 'DESC')
                     ->findAll();
     }
 
@@ -97,17 +97,27 @@ class CajaChicaModel extends Model
         $totalDigital = 0;
 
         foreach ($movimientos as $mov) {
+            $esDigital = isset($mov['es_digital']) && $mov['es_digital'] == 1;
+
             if ($mov['tipo'] === 'entrada') {
                 $totalEntradas += $mov['monto'];
 
-                // Separar efectivo y digital solo para entradas
-                if (isset($mov['es_digital']) && $mov['es_digital'] == 1) {
+                // Sumar a efectivo o digital según corresponda
+                if ($esDigital) {
                     $totalDigital += $mov['monto'];
                 } else {
                     $totalEfectivo += $mov['monto'];
                 }
             } else {
+                // SALIDA
                 $totalSalidas += $mov['monto'];
+
+                // RESTAR de efectivo o digital según corresponda
+                if ($esDigital) {
+                    $totalDigital -= $mov['monto'];
+                } else {
+                    $totalEfectivo -= $mov['monto'];
+                }
             }
         }
 

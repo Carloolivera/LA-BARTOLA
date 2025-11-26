@@ -40,6 +40,7 @@ $routes->group('admin', ['filter' => 'group:admin'], function($routes) {
     $routes->get('caja-chica/eliminar/(:num)', 'Admin\CajaChica::eliminar/$1');
     $routes->get('caja-chica/archivo', 'Admin\CajaChica::archivo');
     $routes->get('caja-chica/imprimir/(:segment)', 'Admin\CajaChica::imprimir/$1');
+    $routes->get('caja-chica/exportarExcel/(:segment)', 'Admin\CajaChica::exportarExcel/$1');
 });
 
 // CRUD DE MENÚ (ADMIN o VENDEDOR)
